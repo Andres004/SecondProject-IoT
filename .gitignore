@@ -1,0 +1,25 @@
+# PlatformIO
+.pio/
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+platformio-device-monitor-*.log
+
+# Credentials: never committed
+include/Secrets.h
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Working logs (final evidence is copied to docs/appendices/)
+server/logs/
+
+# AI tool folders and OS files
+.agent/
+.claude/
+.cursor/
+.DS_Store
+Thumbs.db
