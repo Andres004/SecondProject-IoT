@@ -1,7 +1,7 @@
-"""TCP control server: receives sensor readings and commands the actuator.
+"""TCP control server of the system.
 
-Run from the repository root:
-    python server/tcp_server.py
+It receives the readings of the sensor, runs the control algorithm and
+sends the commands to the actuator. Every event is logged with its t_ms.
 """
 
 import csv
@@ -14,13 +14,13 @@ from pathlib import Path
 import config
 from zone_controller import ACTUATOR_COMMANDS, ZoneController
 
-ROLES = ("SENSOR", "ACTUATOR")
+ROLES = ("SENSOR", "ACTUATOR")  # Roles that a client can register.
 
 
 def local_ip() -> str:
-    """Return the LAN IP of this PC (the value for SERVER_HOST).
+    """Return the IP address of this PC in the local network.
 
-    Connecting a UDP socket only selects the network route; no data is sent.
+    Connecting a UDP socket only chooses the network route; no data is sent.
     """
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
         try:
@@ -31,14 +31,15 @@ def local_ip() -> str:
 
 
 class EventLog:
-    """Records every event with its t_ms on the console and in a CSV file.
+    """Writes every event with its t_ms on the console and in a CSV file.
 
-    t_ms is the time in milliseconds since the server started. All
-    timestamps come from this single clock, so latencies can be computed
-    by subtracting them.
+    t_ms is the time in milliseconds since the server started. All events
+    use this same clock, so the difference between two t_ms values is the
+    time that passed between both events.
     """
 
     def __init__(self, folder: Path) -> None:
+        """Create the CSV file with its header row and start the clock."""
         folder.mkdir(exist_ok=True)
         self.path = folder / datetime.now().strftime(
             "server_%Y%m%d_%H%M%S.csv")
@@ -53,7 +54,7 @@ class EventLog:
 
     def write(self, event: str, t_ms: float | None = None,
               **fields) -> None:
-        """Record one event; t_ms defaults to the current time.
+        """Write one event; t_ms is the current time unless it is given.
 
         fields fills the optional columns: seq, value, zone, latency_ms.
         """
@@ -62,6 +63,8 @@ class EventLog:
         details = " ".join(f"{name}={field}"
                            for name, field in fields.items())
         with self._lock:
+            # Opening the file for each event keeps every event saved,
+            # even if the program stops suddenly.
             with open(self.path, "a", newline="", encoding="utf-8") as file:
                 csv.DictWriter(file, config.LOG_COLUMNS).writerow(
                     {"t_ms": t_ms, "event": event, **fields})
@@ -71,11 +74,13 @@ class EventLog:
 class ControlServer:
     """Central control entity of the system.
 
-    Each TCP client is served by its own thread. Shared state (the
-    controller and the registered clients) is protected by one lock.
+    Each client is served by its own thread. One lock protects the state
+    that the threads share: the controller, the registered clients and the
+    commands waiting for their ACK.
     """
 
     def __init__(self, log: EventLog) -> None:
+        """Start without clients and with the controller in ERROR."""
         self.log = log
         self.controller = ZoneController()
         self.sensor: socket.socket | None = None
@@ -93,15 +98,18 @@ class ControlServer:
                     conn, address = listener.accept()
                 except TimeoutError:
                     continue
+                # TCP_NODELAY sends each short message at once.
                 conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                # Reading a socket blocks, so each client has its own thread.
                 threading.Thread(target=self._serve_client,
                                  args=(conn, address), daemon=True).start()
 
     def _serve_client(self, conn: socket.socket, address: tuple) -> None:
-        """Read protocol lines from one client until it disconnects."""
+        """Read the messages of one client until it disconnects."""
         self.log.write("CONNECT", value=f"{address[0]}:{address[1]}")
         role, reason = None, "closed"
         try:
+            # makefile() splits the TCP byte stream into lines ended by '\n'.
             with conn, conn.makefile("r", encoding="ascii",
                                      errors="replace") as reader:
                 for line in reader:
@@ -114,12 +122,18 @@ class ControlServer:
 
     def _handle_line(self, conn: socket.socket, role: str | None,
                      line: str) -> str | None:
-        """Process one protocol message and return the client's role."""
+        """Process one message and return the role of the client.
+
+        Only a registered sensor may send POST and only a registered
+        actuator may send ACK.
+        """
+        # Empty or too long lines are not valid messages.
         parts = line.split()
         if not parts or len(line) > config.MAX_LINE_LENGTH:
             self._reject(conn, "BAD_FORMAT", line)
             return role
         command, args = parts[0], parts[1:]
+        # Wrong arguments (missing, extra or not numeric) raise ValueError.
         try:
             if command == "REGISTER":
                 return self._on_register(conn, args)
@@ -136,7 +150,10 @@ class ControlServer:
         return role
 
     def _on_register(self, conn: socket.socket, args: list[str]) -> str:
-        """REGISTER <role>: a new client replaces the previous one."""
+        """REGISTER <role>: save the client under its role.
+
+        If another client had that role, this client takes its place.
+        """
         (role,) = args
         if role not in ROLES:
             raise ValueError(role)
@@ -144,9 +161,12 @@ class ControlServer:
             self._send(conn, "OK")
             self.log.write("REGISTER", value=role)
             if role == "SENSOR":
+                # The sensor must send something at least every
+                # SENSOR_TIMEOUT_S, or it is considered lost.
                 conn.settimeout(config.SENSOR_TIMEOUT_S)
                 self.sensor = conn
             else:
+                # The actuator receives the current state at once.
                 self.actuator = conn
                 self._send_command(0, self.log.now_ms())
         return role
@@ -156,15 +176,21 @@ class ControlServer:
         seq_text, distance_text = args
         seq, distance = int(seq_text), float(distance_text)
         with self.lock:
+            # t_post is the start of the latency measured for this reading.
             t_post = self.log.now_ms()
             changed = self.controller.update(distance)
             self.log.write("POST", t_post, seq=seq, value=distance_text,
                            zone=self.controller.zone.name)
+            # A command is sent only when the zone changes.
             if changed:
                 self._send_command(seq, t_post)
 
     def _on_ack(self, args: list[str]) -> None:
-        """ACK <seq>: the actuator applied the command; log the latency."""
+        """ACK <seq>: the actuator applied a command; log its latency.
+
+        The latency is the time from the event that caused the command to
+        the arrival of this ACK.
+        """
         (seq_text,) = args
         seq = int(seq_text)
         with self.lock:
@@ -175,10 +201,11 @@ class ControlServer:
 
     def _on_disconnect(self, conn: socket.socket, role: str | None,
                        reason: str) -> None:
-        """Forget the client; losing the sensor commands ERROR."""
+        """Forget a client that left; losing the sensor commands ERROR."""
         with self.lock:
             self.log.write("DISCONNECT",
                            value=f"{role or 'UNREGISTERED'}/{reason}")
+            # The comparison ignores an old connection that was replaced.
             if conn is self.actuator:
                 self.actuator = None
             if conn is self.sensor:
@@ -187,10 +214,10 @@ class ControlServer:
                     self._send_command(0, self.log.now_ms())
 
     def _send_command(self, seq: int, t_cause: float) -> None:
-        """Send the command of the current zone (the lock must be held).
+        """Send the command of the current zone to the actuator.
 
-        t_cause is the t_ms of the event that caused the command; the ACK
-        latency is measured from it.
+        The caller must hold the lock. t_cause is the t_ms of the event that
+        caused the command; the latency of its ACK is measured from it.
         """
         zone = self.controller.zone
         command = ACTUATOR_COMMANDS[zone]
@@ -198,12 +225,14 @@ class ControlServer:
             self.log.write("NO_ACTUATOR", seq=seq, value=command,
                            zone=zone.name)
             return
+        # A failed send means the actuator is gone; it must register again.
         try:
             self._send(self.actuator, f"SET {seq} {command}")
         except OSError:
             self.actuator = None
             self.log.write("SEND_FAILED", seq=seq, value=command)
             return
+        # The command waits in pending until its ACK arrives.
         self.pending[seq] = t_cause
         self.log.write("SET", seq=seq, value=command, zone=zone.name)
 
@@ -216,7 +245,7 @@ class ControlServer:
 
     @staticmethod
     def _send(conn: socket.socket, message: str) -> None:
-        """Send one protocol message terminated by a newline."""
+        """Send one message followed by a newline."""
         conn.sendall((message + "\n").encode("ascii"))
 
 

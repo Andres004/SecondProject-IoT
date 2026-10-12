@@ -1,7 +1,6 @@
-"""Control algorithm: distance classification with hysteresis.
+"""Control algorithm: turns each distance reading into a zone.
 
-This module is pure logic (no sockets, no hardware), so it can be unit
-tested on any PC.
+The module only does calculations; it has no network or hardware code.
 """
 
 import math
@@ -19,7 +18,7 @@ class Zone(Enum):
     ERROR = "ERROR"
 
 
-#: Actuator command for each zone, in the protocol format "<led> <mode>".
+# Command sent to the actuator for each zone, as "<led> <mode>".
 ACTUATOR_COMMANDS = {
     Zone.NEAR: "RED BLINK",
     Zone.MEDIUM: "YELLOW BLINK",
@@ -27,7 +26,8 @@ ACTUATOR_COMMANDS = {
     Zone.ERROR: "ALL BLINK",
 }
 
-# A zone change requires passing the boundary by HYSTERESIS_CM.
+# Readings that change the zone: each boundary moved HYSTERESIS_CM in the
+# direction of the movement.
 NEAR_TO_MEDIUM_CM = config.NEAR_MEDIUM_BOUNDARY_CM + config.HYSTERESIS_CM
 MEDIUM_TO_NEAR_CM = config.NEAR_MEDIUM_BOUNDARY_CM - config.HYSTERESIS_CM
 MEDIUM_TO_FAR_CM = config.MEDIUM_FAR_BOUNDARY_CM + config.HYSTERESIS_CM
@@ -41,9 +41,10 @@ def is_valid(distance_cm: float) -> bool:
 
 
 def classify(distance_cm: float) -> Zone:
-    """Classify one reading into contiguous, non-overlapping ranges.
+    """Return the zone of one reading, without hysteresis.
 
-    This is the plain classification (RF2), without hysteresis.
+    The ranges are contiguous and do not overlap, so every valid reading
+    belongs to exactly one zone.
     """
     if not is_valid(distance_cm):
         return Zone.ERROR
@@ -60,30 +61,34 @@ class ZoneController:
     - Hysteresis: the zone only changes when a reading passes a boundary
       by at least HYSTERESIS_CM, so a trembling object does not make the
       LEDs flicker.
-    - Fault tolerance: isolated invalid readings are ignored and keep the
-      current zone; MAX_INVALID_READINGS in a row enter ERROR.
+    - Fault tolerance: isolated invalid readings keep the current zone;
+      MAX_INVALID_READINGS invalid readings in a row change to ERROR.
     """
 
     def __init__(self) -> None:
+        """Start in ERROR, because there is no reading yet."""
         self.zone = Zone.ERROR
         self._invalid_count = 0
 
     def update(self, distance_cm: float) -> bool:
-        """Process one reading. Return True if the zone changed."""
+        """Process one reading and return True if the zone changed."""
         if is_valid(distance_cm):
+            # A valid reading ends any run of invalid readings.
             self._invalid_count = 0
             new_zone = self._next_zone(distance_cm)
         else:
+            # Isolated invalid readings keep the zone and its hysteresis.
             self._invalid_count += 1
             if self._invalid_count < config.MAX_INVALID_READINGS:
                 return False
             new_zone = Zone.ERROR
+        # The caller only sends a command when the zone really changes.
         changed = new_zone != self.zone
         self.zone = new_zone
         return changed
 
     def reset(self) -> bool:
-        """Enter ERROR, e.g. when the sensor disconnects.
+        """Change to ERROR, for example when the sensor disconnects.
 
         Return True if the zone changed.
         """
@@ -93,23 +98,26 @@ class ZoneController:
         return changed
 
     def _next_zone(self, distance_cm: float) -> Zone:
-        """Transition table of the state machine for a valid reading.
+        """Return the zone that follows the current one for a valid reading.
 
-        From ERROR there is no previous zone, so the reading is
-        classified directly.
+        Each zone is left only through its own thresholds. From ERROR the
+        reading is classified directly, because there is no zone to leave.
         """
+        # From NEAR the reading must go past the upper thresholds.
         if self.zone == Zone.NEAR:
             if distance_cm >= MEDIUM_TO_FAR_CM:
                 return Zone.FAR
             if distance_cm >= NEAR_TO_MEDIUM_CM:
                 return Zone.MEDIUM
             return Zone.NEAR
+        # From MEDIUM it can leave downwards (NEAR) or upwards (FAR).
         if self.zone == Zone.MEDIUM:
             if distance_cm < MEDIUM_TO_NEAR_CM:
                 return Zone.NEAR
             if distance_cm >= MEDIUM_TO_FAR_CM:
                 return Zone.FAR
             return Zone.MEDIUM
+        # From FAR the reading must go below the lower thresholds.
         if self.zone == Zone.FAR:
             if distance_cm < MEDIUM_TO_NEAR_CM:
                 return Zone.NEAR
