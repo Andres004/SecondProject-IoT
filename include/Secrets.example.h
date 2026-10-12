@@ -1,18 +1,22 @@
-/**
- * @file Secrets.example.h
- * @brief Network configuration template. Copy it as Secrets.h and fill in real values.
- *        Secrets.h is listed in .gitignore, so credentials are never committed.
- */
+// Network settings of both ESP32: WiFi network and address of the server.
+// This file is a template. A copy named Secrets.h holds the real values and
+// is never uploaded to the repository.
+
 #ifndef SECRETS_H
 #define SECRETS_H
 
 #include <Arduino.h>
 
 namespace Secrets {
+
+// Name and password of the WiFi network. The ESP32 only connects to 2.4 GHz networks.
 constexpr char WIFI_SSID[] = "YOUR_NETWORK_NAME";
 constexpr char WIFI_PASSWORD[] = "YOUR_NETWORK_PASSWORD";
-constexpr char SERVER_HOST[] = "192.168.0.100";  ///< IP address of the PC running the server
-constexpr uint16_t SERVER_PORT = 5050;           ///< Must match PORT in server/config.py
+
+// IP address of the PC that runs the server, and the TCP port where it listens.
+constexpr char SERVER_HOST[] = "192.168.0.100";
+constexpr uint16_t SERVER_PORT = 5050;
+
 }  // namespace Secrets
 
 #endif

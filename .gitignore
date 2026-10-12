@@ -1,23 +1,25 @@
-# PlatformIO
+# Build files and editor data that PlatformIO creates on each computer
 .pio/
 .vscode/.browse.c_cpp.db*
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# Serial monitor sessions saved by log2file
 platformio-device-monitor-*.log
 
-# Credentials: never committed
+# WiFi password and server address of each computer
 include/Secrets.h
 
-# Python
+# Python cache and virtual environment
 __pycache__/
 *.pyc
 .venv/
 
-# Working logs (final evidence is copied to docs/appendices/)
+# CSV files that the server writes while it runs
 server/logs/
 
-# AI tool folders and OS files
+# Folders of AI tools and files of the operating system
 .agent/
 .claude/
 .cursor/
