@@ -20,7 +20,7 @@ void write(const char *event, const char *format, ...) {
   // Buffer for the details text, with one extra place for the end of the text.
   char details[MAX_DETAILS_LENGTH + 1];
 
-  // The "..." values are read with va_list and placed into the format by|
+  // The "..." values are read with va_list and placed into the format by
   // vsnprintf(), which never writes beyond the size of the buffer.
   va_list args;
   va_start(args, format);

@@ -37,4 +37,4 @@ constexpr float CM_PER_ECHO_US = SOUND_SPEED_CM_PER_US / 2;
 
 }  // namespace SensorConfig
 
-#endif     
+#endif
