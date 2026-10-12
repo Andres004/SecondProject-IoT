@@ -7,7 +7,6 @@ values in the given order.
 import socket
 import sys
 import time
-
 import config
 
 # Readings that cross every boundary in both directions, then invalid ones.
