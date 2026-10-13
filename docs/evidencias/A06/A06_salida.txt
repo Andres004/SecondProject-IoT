@@ -1,0 +1,33 @@
+
+== server_20261013_143757.csv (55.9 s, 560 events)
+Readings: 523 received over 0.9 min, 229 invalid, 9 lost, 0 seq restarts
+RF1 format: 0 readings without one decimal or NAN -> PASS
+RNF4 readings per 10 s window: min 78, mean 95.8, max 101 -> PASS
+RNF1 time between readings: mean 104.1 ms, p95 223.6 ms, max 2201.3 ms; 1 disconnections -> FAIL
+RF2/RF5/RF6 control: 0 zones different from the algorithm, 13 zone changes, 0 without command, 0 extra commands -> PASS
+     seq 826 26.0: ERROR -> MEDIUM
+     seq 881 NAN: MEDIUM -> ERROR (198 ms after the first invalid reading)
+     seq 921 2.0: ERROR -> NEAR
+     seq 924 0.9: NEAR -> ERROR (319 ms after the first invalid reading)
+     seq 954 26.1: ERROR -> MEDIUM
+     seq 965 NAN: MEDIUM -> ERROR (220 ms after the first invalid reading)
+     seq 985 25.2: ERROR -> MEDIUM
+     seq 1104 0.9: MEDIUM -> ERROR (332 ms after the first invalid reading)
+     seq 1154 24.5: ERROR -> MEDIUM
+     seq 1227 NAN: MEDIUM -> ERROR (204 ms after the first invalid reading)
+     seq 1315 25.5: ERROR -> MEDIUM
+     seq 1340 9.2: MEDIUM -> NEAR
+     seq 1345 24.6: NEAR -> MEDIUM
+RNF3 latency_ms of 13 zone changes: min 23.3, median 42.3, p95 307.2, max 307.2; worst response 100 + 307.2 = 407.2 ms -> PASS
+     each change: 52.8, 41.3, 55.9, 80.0, 42.3, 30.9, 26.3, 49.4, 38.9, 32.3, 23.3, 260.7, 307.2
+RF7 (a) sensor lost (SENSOR/timeout) 1004 ms after the last reading; no ACK 0 (zone already ERROR or no actuator)
+RNF5 after a server restart: REGISTER SENSOR 1415 ms after START -> PASS
+RNF5 after a server restart: REGISTER ACTUATOR 1400 ms after START -> PASS
+RF4 protocol: 0 PROTOCOL_ERROR, 0 SET without ACK, 0 ACK without SET -> PASS
+
+== A06_OI1.log (533 events)
+Events: BOOT 1, SERVER_CONNECTED 2, SERVER_LOST 2, SERVER_UNREACHABLE 12, WIFI_RETRY 0, TX_FAILED 236, RX_TOO_LONG 0
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1804 to 2000 ms (11 intervals) -> PASS
