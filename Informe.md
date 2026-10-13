@@ -271,6 +271,12 @@ Hay dos confirmaciones distintas: el ACK de TCP solo indica que los bytes llegar
 - **Alimentación:** cada placa se alimenta por su propio USB. No comparten tierra porque no hay cables entre ellas: solo se comunican por WiFi.
 - **Red:** el ESP32 solo se conecta a redes de 2.4 GHz. La PC debe estar en la misma red y aceptar conexiones TCP entrantes en el puerto 5050 (§3.4).
 
+### 2.2.4 Montaje real
+
+![Montaje real de OI-1 (arriba) y OI-2 (abajo) en una misma protoboard](docs/img/montaje_oi1_oi2.jpg)
+
+**Figura 4b.** Montaje usado en todas las pruebas. Arriba, OI-1: ESP32 con el HC-SR04 y las tres resistencias de 1 kΩ del divisor de ECHO junto al sensor. Abajo, OI-2: ESP32 con los LEDs rojo, amarillo y blanco y sus resistencias de 220 Ω. Las dos placas comparten la protoboard solo por comodidad: cada una se alimenta por su propio USB, ejecuta su propio firmware y se comunica con la otra únicamente a través del servidor, por WiFi.
+
 ### 2.3 Diagramas de clases
 
 Hay un diagrama por programa y uno para la librería que comparten los dos firmwares. Notación: `+` es público, `-` es privado y los miembros subrayados son estáticos (constantes). «namespace» es un espacio de nombres de C++, «module» un módulo de Python y «main.cpp» el archivo principal de un firmware, con sus funciones `setup()` y `loop()`. El rombo lleno indica que un objeto crea y contiene al otro; el rombo vacío, que lo recibe ya creado; la flecha punteada, que lo usa.
@@ -1608,7 +1614,7 @@ Fuentes de error consideradas:
 | RF5 | Histéresis de 2 cm | 0 `SET` con el blanco quieto 55.5 s en 20 cm y 49.1 s en 40 cm; cruces en 22.3, 17.9, 42.1 y 37.8 cm | A04 ([A04](docs/evidencias/A04/)) | Física y log | Cumple |
 | RF6 | ERROR tras 3 lecturas inválidas seguidas | ERROR en la 3.ª `NAN`, 199–200 ms después de la primera, 3 de 3 | A06 ([A06_salida.txt](docs/evidencias/A06/A06_salida.txt)) | Física y log | Cumple |
 | RF7 (a) | ERROR entre 1.0 y 1.5 s sin lecturas | `SENSOR/timeout` a 1004–1015 ms; `ACK 0` a 1033–1187 ms (A07, A08); B04: 1015 ms | A07, A08, B04 | Log y automática | Cumple |
-| RF7 (b), (c) | LEDs de ERROR sin servidor o sin red; reconexión sin intervención | Pedidos de red cada 9998–10002 ms; vuelta a MEDIUM sin tocar nodos | A08, B05 ([A08_analisis.txt](docs/evidencias/A08/A08_analisis.txt)) | Física y log | Cumple |
+| RF7 (b), (c) | LEDs de ERROR sin servidor o sin red; reconexión sin intervención | Pedidos de red cada 9998–10002 ms; vuelta a MEDIUM sin tocar nodos | A08, B05-A ([A08_analisis.txt](docs/evidencias/A08/A08_analisis.txt)) | Log y video (B05-A) | Cumple |
 | RNF1 | ≥ 10 min, 0 reinicios, ningún intervalo > 1000 ms | 12.0 min; 7202 lecturas; 0 perdidas, 0 inválidas, 0 reinicios de `seq`, 0 desconexiones; intervalo medio 100.0 ms, p95 118.8 ms, máx. 926.9 ms | B07 ([B07_analisis.txt](docs/evidencias/B07/B07_analisis.txt)) | Log | Cumple (margen 73 ms) |
 | RNF2 | Error individual ≤ 3 cm entre 5 y 100 cm | Error individual máx. 2.6 cm (100 cm); error del promedio máx. 2.44 cm; dispersión ≤ 1.0 cm; 70 lecturas en 7 puntos | A02 (Tabla 3) | Física y log | Cumple, con error sistemático creciente |
 | RNF3 | Respuesta ≤ 1000 ms (100 ms + `latency_ms`) | A05: 42 cambios, `latency_ms` 8.9–140.8 ms, peor respuesta 240.8 ms. B07: 6 de 7 cambios en 14.0–31.6 ms y 1 de 1295.9 ms. Red degradada: A04 3625.6 ms, A06 5674.4 ms, A08 1735.8 y 1768.5 ms | A05, B07, A04, A06, A08 | Log | Cumple en condiciones normales de red (48 de 49 cambios en A05 y B07); **no cumple** en 5 cambios ocurridos durante retrasos o cortes de la red WiFi |
@@ -1672,7 +1678,6 @@ Lo que los datos no permiten afirmar:
 - **Calibrar la distancia (A02).** Medir dos o tres distancias de referencia, calcular el factor entre la distancia real y la medida, y ajustar `SensorConfig::CM_PER_ECHO_US` con ese factor. Así se elimina el error sistemático que crece con la distancia y se gana margen frente al límite de 3 cm de RNF2.
 - **Descartar lecturas sueltas (A04).** Clasificar con la mediana de las 3 últimas lecturas válidas en lugar de la última: una lectura aislada, como las de 27.5 y 24.6 cm del primer intento de A04-B, no cambiaría la zona. El costo es hasta 200 ms más de respuesta, dentro del margen de RNF3.
 - **Red WiFi estable (A04, A06 y B07).** Ubicar el punto de acceso cerca de los ESP32, usar un canal poco congestionado y desactivar el ahorro de energía del adaptador WiFi de la PC, para evitar retardos como el `ACK` de 3625.6 ms de A04-B, el corte de unos 6 s de A06 y el `ACK` de 1295.9 ms de B07. Una red dedicada para el sistema, sin otros dispositivos, reduce además la congestión.
-
 - **Supervisión de la conexión (A06 y A08).** Agregar un mensaje periódico (*heartbeat*) entre el servidor y los clientes, y activar TCP keepalive en los sockets, para detectar un servidor que desaparece sin cerrar la conexión. En A08, a 150.0 s, el servidor perdió todas sus conexiones y OI-2 no registró ningún `SERVER_LOST` (§4.4).
 - **Envío no bloqueante en `TcpLink::send()` (A06).** Comprobar el espacio libre del buffer antes de escribir o usar un buffer acotado que descarte lecturas viejas, para que `loop()` no se detenga como en los 1.66 s de A06 (§3.7).
 - **Verificar RNF3 físicamente.** Filmar el blanco y los LEDs a 60 fps y contar cuadros entre el cruce del umbral y el cambio de LED, para medir el término de 100 ms que hoy es una cota calculada (§5.2).
@@ -1709,4 +1714,5 @@ Evidencias de las pruebas, una carpeta por prueba en [docs/evidencias/](docs/evi
 |---|---|---|
 | Esquema de OI-1 | [docs/img/circuito_oi1_sensor.svg](docs/img/circuito_oi1_sensor.svg) | Circuito eléctrico de OI-1, con el divisor de tensión de ECHO |
 | Esquema de OI-2 | [docs/img/circuito_oi2_actuador.svg](docs/img/circuito_oi2_actuador.svg) | Circuito eléctrico de OI-2, con las resistencias de los LEDs |
+| Montaje real | [docs/img/montaje_oi1_oi2.jpg](docs/img/montaje_oi1_oi2.jpg) | Foto del prototipo de OI-1 y OI-2, con el divisor de ECHO y las resistencias de los LEDs |
 | Diagramas | Bloques `mermaid` de este informe | Fuentes editables de los diagramas de arquitectura, clases, secuencia, estados y de las Figuras 12 y 13 |
