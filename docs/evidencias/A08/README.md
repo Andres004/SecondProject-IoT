@@ -8,7 +8,6 @@ Prueba A08 de la sección 4.2 del informe. Fecha: 13/10/2026. La PC usó la IP f
 | A08_OI1.log | Log del monitor serie de OI-1 |
 | A08_OI2.log | Log del monitor serie de OI-2 |
 | A08_analisis.txt | Salida de `analyze_log.py` para el CSV y los dos logs |
-| A08.mp4 | LEDs durante los cortes: los tres parpadean sin red y vuelve el amarillo al volver la red |
 
 | Corte | Placas detectan la caída (`wifi=down`) | Pedidos de red | OI-1 registrado de nuevo | OI-2 registrado de nuevo |
 |---|---|---|---|---|

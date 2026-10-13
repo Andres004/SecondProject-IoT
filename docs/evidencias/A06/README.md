@@ -4,7 +4,6 @@ Prueba A06 de la sección 4.2 del informe. Fecha: 13/10/2026.
 
 | Archivo | Qué muestra |
 |---|---|
-| server_20261013_144241.csv | CSV del servidor: blanco a unos 26 cm (MEDIUM) y desconexiones del cable ECHO del lado del HC-SR04 |
 | A06_OI1.log | Log del monitor serie de OI-1 durante la prueba |
 | A06_salida.txt | Salida de `analyze_log.py` para el CSV y el log de OI-1 |
 | A06.mp4 | LEDs durante la prueba: amarillo parpadeando (MEDIUM) y los tres parpadeando (ERROR) mientras ECHO está desconectado |
