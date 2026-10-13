@@ -1,0 +1,7 @@
+﻿
+== B05B_OI1.log (231 events)
+Events: BOOT 1, SERVER_CONNECTED 2, SERVER_LOST 2, SERVER_UNREACHABLE 6, WIFI_RETRY 0, TX_FAILED 129, RX_TOO_LONG 1
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1814 to 2000 ms (5 intervals) -> PASS
