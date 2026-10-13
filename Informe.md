@@ -52,11 +52,11 @@ RF1 a RF4 definen la función básica del sistema: medir, clasificar, actuar y c
 | ID | Requerimiento | Criterio de aceptación |
 | --- | --- | --- |
 | RF1 | Medir la distancia entre el sensor ultrasónico y el objeto que tiene enfrente. | OI-1 obtiene una lectura en cm, con resolución de 0.1 cm, en cada medición. Si el eco no termina en 25 ms, la lectura se informa como inválida (`NAN`). |
-| RF2 | Clasificar cada lectura en uno de tres rangos contiguos y sin solapamiento. | Cada lectura válida (2.0 ≤ d ≤ 400.0 cm) pertenece a un solo rango de la Tabla 1. Los límites 20.0 y 40.0 pertenecen al rango superior. |
+| RF2 | Clasificar cada lectura en uno de tres rangos contiguos y sin solapamiento. | Cada lectura válida (2.0 ≤ d ≤ 200.0 cm) pertenece a un solo rango de la Tabla 1. Los límites 20.0 y 40.0 pertenecen al rango superior. |
 | RF3 | Activar los actuadores con un comportamiento distinto para cada rango. | NEAR: solo el LED rojo parpadea. MEDIUM: solo el amarillo parpadea. FAR: solo el blanco está encendido fijo. ERROR: los tres parpadean juntos. El parpadeo es de 2 Hz (250 ms encendido y 250 ms apagado) y no se reinicia mientras el estado no cambia. |
 | RF4 | Enviar las lecturas de OI-1 al servidor y los comandos del servidor a OI-2 mediante sockets TCP sobre WiFi IEEE 802.11, con un protocolo de aplicación propio. | OI-1 y OI-2 abren una conexión TCP con el puerto 5050 del servidor a través de una red WiFi de 2.4 GHz y se identifican con `REGISTER`. Todos los mensajes cumplen la especificación de §2.5: OI-2 confirma cada comando con `ACK <seq>` después de aplicarlo, y el servidor responde `ERROR <código>` a un mensaje inválido sin cerrar la conexión. |
 | RF5 | Mantener estable la indicación cuando el objeto está cerca de una frontera. | La zona cambia solo cuando la lectura pasa la frontera por al menos 2.0 cm (Tabla 2). Ejemplo: desde NEAR, 21.9 cm mantiene NEAR y 22.0 cm cambia a MEDIUM. |
-| RF6 | Propagar y tolerar las lecturas inválidas. | OI-1 envía también las lecturas inválidas. El servidor considera inválida toda lectura no finita, menor que 2.0 cm o mayor que 400.0 cm. Una o dos inválidas seguidas no cambian la zona ni su histéresis; la tercera seguida cambia a ERROR. |
+| RF6 | Propagar y tolerar las lecturas inválidas. | OI-1 envía también las lecturas inválidas. El servidor considera inválida toda lectura no finita, menor que 2.0 cm o mayor que 200.0 cm. Una o dos inválidas seguidas no cambian la zona ni su histéresis; la tercera seguida cambia a ERROR. |
 | RF7 | Pasar a un estado de falla seguro y distinguible, y recuperar la comunicación sin intervención. | (a) Si el sensor se desconecta o pasa 1.0 s sin enviar lecturas, el servidor pasa a ERROR y se lo ordena a OI-2, que lo confirma (`ACK 0`) en ≤ 1.5 s desde la última lectura recibida. (b) Si OI-2 pierde la conexión con el servidor (conexión cerrada o WiFi caída), muestra ERROR por sí mismo. (c) Tras una caída del servidor o de la red, OI-1 y OI-2 reintentan la conexión cada 2 s sin reiniciarse, se registran de nuevo y OI-2 recibe el estado vigente. |
 
 ### 1.3 Rangos y lógica de control
@@ -69,16 +69,16 @@ El algoritmo de control se ejecuta en el servidor ([zone_controller.py](server/z
 |---|---|---|---|
 | NEAR (cerca) | 2.0 ≤ d < 20.0 | `RED BLINK` | LED rojo parpadeando a 2 Hz |
 | MEDIUM (medio) | 20.0 ≤ d < 40.0 | `YELLOW BLINK` | LED amarillo parpadeando a 2 Hz |
-| FAR (lejos) | 40.0 ≤ d ≤ 400.0 | `WHITE ON` | LED blanco encendido fijo |
+| FAR (lejos) | 40.0 ≤ d ≤ 200.0 | `WHITE ON` | LED blanco encendido fijo |
 | ERROR | Tercera lectura inválida seguida; sensor desconectado o 1.0 s sin lecturas; estado inicial, antes de la primera lectura | `ALL BLINK` | Los tres LEDs parpadeando juntos a 2 Hz |
 
-- **Límites.** 2.0 cm pertenece a NEAR; 20.0 cm, a MEDIUM; 40.0 cm y 400.0 cm, a FAR. 1.9 cm y 400.1 cm son inválidas. Las pruebas unitarias de [test_zone_controller.py](server/tests/test_zone_controller.py) usan exactamente esos valores.
+- **Límites.** 2.0 cm pertenece a NEAR; 20.0 cm, a MEDIUM; 40.0 cm y 200.0 cm, a FAR. 1.9 cm y 200.1 cm son inválidas. Las pruebas unitarias de [test_zone_controller.py](server/tests/test_zone_controller.py) usan exactamente esos valores.
 - **Sin redondeo.** El servidor compara el número recibido tal como llega. OI-1 lo envía con un decimal, una resolución de 0.1 cm, más fina que la exactitud del sensor.
-- **Contigüidad y no solapamiento.** Sean V = [2.0, 400.0] el rango válido, NEAR = [2.0, 20.0), MEDIUM = [20.0, 40.0) y FAR = [40.0, 400.0]:
-  - NEAR ∪ MEDIUM ∪ FAR = [2.0, 400.0] = V, porque cada intervalo empieza donde termina el anterior.
+- **Contigüidad y no solapamiento.** Sean V = [2.0, 200.0] el rango válido, NEAR = [2.0, 20.0), MEDIUM = [20.0, 40.0) y FAR = [40.0, 200.0]:
+  - NEAR ∪ MEDIUM ∪ FAR = [2.0, 200.0] = V, porque cada intervalo empieza donde termina el anterior.
   - NEAR ∩ MEDIUM = ∅ y MEDIUM ∩ FAR = ∅, porque 20.0 y 40.0 están solo en el intervalo superior. NEAR ∩ FAR = ∅, porque MEDIUM los separa.
   - Por lo tanto, cada lectura válida pertenece a exactamente un rango, y una lectura fuera de V (o no numérica, o infinita) no pertenece a ninguno.
-- **Rango de trabajo.** El HC-SR04 no mide por debajo de 2 cm (zona ciega) ni más allá de 400 cm (alcance máximo de su hoja de datos). Por eso esos son los límites de V. La prueba A03 comprueba los dos límites con el sensor real.
+- **Rango de trabajo.** El HC-SR04 no mide por debajo de 2 cm (zona ciega). Su hoja de datos indica un alcance de 400 cm, pero con este montaje las lecturas solo fueron continuas hasta unos 2 m; más lejos el eco se pierde con frecuencia (prueba A03). Por eso los límites de V son 2 y 200 cm: una lectura fuera de ellos se trata como inválida. La prueba A03 comprueba los dos límites con el sensor real.
 - **Error distinguible.** El patrón de ERROR (los tres LEDs parpadeando) no coincide con el de ninguna zona, así que una falla detectada nunca se confunde con una zona; en particular, con FAR, la indicación de “objeto lejos”. El único caso de falla que el sistema no detecta se analiza en §7.
 
 ### 1.4 Histéresis y lecturas inválidas
@@ -98,7 +98,7 @@ La Tabla 1, implementada en `classify()`, define a qué rango pertenece una lect
 - **Saltos.** NEAR → FAR (d ≥ 42.0) y FAR → NEAR (d < 18.0) ocurren en una sola transición.
 - **Salida de ERROR.** La primera lectura válida se clasifica directamente con la Tabla 1, sin histéresis, porque no hay una zona anterior que proteger.
 - **Lecturas inválidas.** La primera y la segunda seguidas no cambian la zona ni sus umbrales; la tercera seguida cambia a ERROR, y una lectura válida reinicia el conteo. Como una lectura inválida aislada no borra la zona, tampoco borra la memoria de la histéresis.
-- **Justificación de los valores.** Los 2 cm deben superar la dispersión de las lecturas de un objeto quieto; esto se confirmará en las pruebas de exactitud e histéresis (A02 y A04). Con 10 lecturas por segundo, la tercera lectura inválida llega 200 ms después de la primera: una pérdida aislada del eco (por ejemplo, por una superficie inclinada) no produce un ERROR falso, y una falla persistente se muestra enseguida.
+- **Justificación de los valores.** Los 2 cm superan la dispersión de las lecturas de un objeto quieto, como confirman A02 (máximo − mínimo ≤ 1.0 cm en cada punto) y A04 (ningún cambio de zona con el objeto quieto en 20 y 40 cm). Con 10 lecturas por segundo, la tercera lectura inválida llega 200 ms después de la primera: una pérdida aislada del eco (por ejemplo, por una superficie inclinada) no produce un ERROR falso, y una falla persistente se muestra enseguida.
 
 ```mermaid
 stateDiagram-v2
@@ -541,7 +541,7 @@ classDiagram
         +MAX_LINE_LENGTH = 32$
         +IP_PROBE_ADDRESS: tuple$
         +MIN_VALID_CM = 2.0$
-        +MAX_VALID_CM = 400.0$
+        +MAX_VALID_CM = 200.0$
         +NEAR_MEDIUM_BOUNDARY_CM = 20.0$
         +MEDIUM_FAR_BOUNDARY_CM = 40.0$
         +HYSTERESIS_CM = 2.0$
@@ -716,7 +716,7 @@ sequenceDiagram
 | Error | S → OI-1 u OI-2 | `ERROR <código>` | `código`: `BAD_FORMAT`, `NOT_REGISTERED` o `UNKNOWN_CMD` | `ERROR BAD_FORMAT` | Ninguna; el cliente solo lo registra |
 
 - **Semántica de `SET`.** El LED indicado se activa en el modo indicado y los demás se apagan; `ALL` selecciona los tres. El servidor emite cuatro combinaciones: `RED BLINK` (NEAR), `YELLOW BLINK` (MEDIUM), `WHITE ON` (FAR) y `ALL BLINK` (ERROR). OI-2 acepta cualquier combinación de `led` y `modo`.
-- **Distancia en `POST`.** OI-1 no filtra: envía el valor calculado aunque esté fuera de 2 a 400 cm. La validez la decide el servidor (RF6).
+- **Distancia en `POST`.** OI-1 no filtra: envía el valor calculado aunque esté fuera de 2 a 200 cm. La validez la decide el servidor (RF6).
 
 #### 2.5.3 Secuencia de los mensajes
 
@@ -751,7 +751,7 @@ El servidor envía `SET` solo en tres casos: cuando la zona cambia, cuando se re
 | Mensaje antes de `REGISTER` | Servidor | `ERROR NOT_REGISTERED` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
 | Rol desconocido, campos de más o de menos, número no válido | Servidor | `ERROR BAD_FORMAT` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
 | `POST` de un cliente que no es el sensor, `ACK` de uno que no es el actuador o comando desconocido | Servidor | `ERROR UNKNOWN_CMD` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
-| Lectura no finita o fuera de 2 a 400 cm | Servidor | Ninguna: no es un error de protocolo | Cuenta como lectura inválida (RF6) |
+| Lectura no finita o fuera de 2 a 200 cm | Servidor | Ninguna: no es un error de protocolo | Cuenta como lectura inválida (RF6) |
 | `ACK` con un `seq` sin comando pendiente | Servidor | Ninguna | Se registra el `ACK` sin `latency_ms` |
 | Línea de más de 32 caracteres recibida por un ESP32 | OI-1 u OI-2 | Se descarta | Evento `RX_TOO_LONG` |
 | Línea que no es un `SET` válido recibida por OI-2 (`OK`, `ERROR` o `SET` mal formado) | OI-2 | Se ignora y no se responde `ACK` | Los LEDs no cambian |
@@ -1194,7 +1194,7 @@ void loop() {
 |---|---|---|---|
 | `SAMPLE_PERIOD_MS` | 100 ms | [SensorConfig.h](src/sensor/SensorConfig.h) | Una medición cada 100 ms (10 lecturas/s). La hoja de datos del HC-SR04 recomienda al menos 60 ms entre disparos |
 | `TRIGGER_PULSE_US` | 10 µs | [SensorConfig.h](src/sensor/SensorConfig.h) | Duración del pulso TRIG |
-| `ECHO_TIMEOUT_US` | 25 000 µs | [SensorConfig.h](src/sensor/SensorConfig.h) | Espera máxima del eco. El eco de un objeto a 400 cm dura 2 × 400 / 0.0343 ≈ 23 300 µs |
+| `ECHO_TIMEOUT_US` | 25 000 µs | [SensorConfig.h](src/sensor/SensorConfig.h) | Espera máxima del eco. El eco de un objeto a 400 cm, el alcance de la hoja de datos del HC-SR04, dura 2 × 400 / 0.0343 ≈ 23 300 µs |
 | `BLINK_INTERVAL_MS` | 250 ms | [ActuatorConfig.h](src/actuator/ActuatorConfig.h) | Medio período del parpadeo (2 Hz) |
 | `RECONNECT_INTERVAL_MS` | 2000 ms | [TcpLink.h](lib/TcpLink/TcpLink.h) | Separación entre intentos de conexión al servidor |
 | `CONNECT_TIMEOUT_MS` | 250 ms | [TcpLink.h](lib/TcpLink/TcpLink.h) | Espera máxima de un intento de conexión |
@@ -1288,7 +1288,7 @@ El identificador indica la categoría: A01 a A08 son pruebas físicas (§4.2) y 
 |---|---|---|---|---|
 | A01 | Arranque y funcionamiento por zona | Registro de OI-2 sin sensor, cada zona con su LED y el parpadeo de 2 Hz | RF1, RF2, RF3, RF4 | 10 min |
 | A02 | Exactitud de la distancia | Error de 10 lecturas en 7 distancias de 5 a 100 cm | RF1, RNF2 | 10 min |
-| A03 | Límites del rango de medición | Lecturas a 2, 300 y 400 cm; objeto en la zona ciega; ningún objeto al alcance | RF1, RF2, RF6 | 15 min |
+| A03 | Límites del rango de medición | Lecturas a 2, 150, 190 y 200 cm; objeto en la zona ciega, más allá de 200 cm y sin eco | RF1, RF2, RF6 | 15 min |
 | A04 | Histéresis con el sensor real | Objeto quieto en cada frontera y cruce lento en ambos sentidos | RF5 | 10 min |
 | A05 | Tiempo de respuesta extremo a extremo | 10 cambios de zona medidos con el reloj del servidor y 5 con video | RNF3 | 15 min |
 | A06 | Lecturas inválidas con el hardware | Con el cable ECHO desconectado, la tercera lectura inválida da ERROR y el sistema se recupera | RF1, RF6 | 5 min |
@@ -1361,25 +1361,27 @@ Mide el error de cada lectura frente a la regla en el rango de RNF2. Los siete p
 
 #### A03. Límites del rango de medición
 
-§1.3 declara que el sistema mide de 2.0 a 400.0 cm. Esta prueba comprueba los dos extremos con el sensor real y lo que ocurre fuera de ellos. Para 300 y 400 cm hace falta un espacio libre de al menos 4 m frente a una pared, o a una superficie grande y plana como una puerta o una pizarra, con el sensor apuntando en horizontal.
+§1.3 declara que el sistema mide de 2.0 a 200.0 cm. Esta prueba comprueba los dos extremos con el sensor real y lo que ocurre fuera de ellos. Las distancias de referencia se marcaron en el piso y se midieron con la regla; para la parte superior hace falta un espacio libre de al menos 3 m frente a una pared o a una superficie grande y plana.
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A03-A | RF1, RF2 | 1. Colocar el blanco a 2 cm, esperar 2 s, anotar el `seq` del último `POST` y esperar 2 s más.<br>2. Acercar el blanco hasta 1 cm (zona ciega) y mantenerlo 10 s.<br>3. Ejecutar `python -m tests.analyze_log 2:<seq>`. | Línea `RF2 range limit 2.0 cm` → `PASS`: 10 de 10 lecturas válidas, zona NEAR y LED rojo parpadeando.<br>A 1 cm, ninguna lectura queda en MEDIUM ni en FAR: el sistema muestra NEAR o, si las lecturas son inválidas, ERROR. | | | |
-| A03-B | RF1, RF2 | 1. Colocar la pared o el blanco grande a 300 cm, esperar 2 s, anotar el `seq` y esperar 2 s más.<br>2. Repetir a 400 cm.<br>3. Ejecutar `python -m tests.analyze_log 300:<seq> 400:<seq>`. | Dos líneas `RF2 range limit` → `PASS`: 10 de 10 lecturas válidas en cada distancia, zona FAR y LED blanco fijo.<br>Se informa el error en cada distancia; RNF2 no lo limita, porque su rango es de 5 a 100 cm. | | | |
-| A03-C | RF1, RF6 | 1. Apuntar el sensor a un espacio sin obstáculos a menos de 5 m (un pasillo largo o hacia el cielo, en exteriores) durante 10 s.<br>2. Volver a colocar el blanco a 30 cm. | `POST n NAN` (el eco no termina en 25 ms) o lecturas mayores que 400.0 cm; en la tercera inválida seguida, `SET n ALL BLINK` y los tres LEDs parpadean.<br>Con el blanco a 30 cm, la primera lectura válida vuelve a MEDIUM.<br>Línea `RF2/RF5/RF6 control` → `PASS`. | | | |
+| A03-A | RF1, RF2 | 1. Colocar el objeto a 2 cm del sensor y mantenerlo quieto.<br>2. Acercarlo más, a la zona ciega (menos de 2 cm), y mantenerlo unos segundos.<br>3. Ejecutar `python -m tests.analyze_log 2:<seq>`. | Línea `RF2 range limit 2.0 cm` → `PASS`: 10 de 10 lecturas válidas, zona NEAR y LED rojo parpadeando.<br>En la zona ciega, ninguna lectura queda en MEDIUM ni en FAR: el sistema muestra NEAR o, si las lecturas son inválidas, ERROR. | A 2 cm: lecturas de 2.3 cm, 10 de 10 válidas (seq 2760–2769), zona NEAR y LED rojo. Más cerca, el sensor entrega 1.6–1.7 cm (inválidas) o `NAN`, y en la tercera inválida seguida el sistema pasa a ERROR (unos 200 ms después de la primera). En la zona ciega solo aparecen las zonas NEAR y ERROR, nunca MEDIUM ni FAR. | Aprobada | [server_20261013_132637.csv](docs/evidencias/A03/server_20261013_132637.csv), [A03-A_2cm.mp4](docs/evidencias/A03/A03-A_2cm.mp4) |
+| A03-B | RF1, RF2, RF6 | 1. Colocar el objeto en las marcas de 150, 190 y 200 cm, y mantenerlo quieto en cada una.<br>2. Alejarlo más allá de 200 cm.<br>3. Ejecutar `python -m tests.analyze_log 150:<seq> 190:<seq> 200:<seq>`. | En 150, 190 y 200 cm, líneas `RF2 range limit` → `PASS`: 10 de 10 lecturas válidas, zona FAR y LED blanco fijo. Se informa el error; RNF2 no lo limita, porque su rango es de 5 a 100 cm.<br>Más allá de 200 cm, las lecturas son mayores que 200.0 cm o `NAN`: en la tercera inválida seguida el sistema pasa a ERROR y los tres LEDs parpadean. En ningún caso muestra FAR con una lectura fuera del rango.<br>Línea `RF2/RF5/RF6 control` → `PASS`. | 150 cm: 143.5 cm; 190 cm: 184.5–184.9 cm; 200 cm: 193.3–193.8 cm. En las tres, 10 de 10 lecturas válidas, zona FAR y LED blanco fijo.<br>Más allá de 200 cm, las lecturas de 205.2 a 258.0 cm se tratan como inválidas y el sistema pasa a ERROR (seq 3663–3752: solo zona ERROR).<br>`RF2/RF5/RF6 control` → `PASS`: 0 zonas distintas del algoritmo y 38 cambios de zona, todos con su comando.<br>Observación: a estas distancias el sensor mide de 5 a 6.5 cm menos que la regla, la misma tendencia de A02. | Aprobada | [server_20261013_132637.csv](docs/evidencias/A03/server_20261013_132637.csv), [A03-B_150cm.mp4](docs/evidencias/A03/A03-B_150cm.mp4), [A03-B_190cm.mp4](docs/evidencias/A03/A03-B_190cm.mp4), [A03-B_200cm.mp4](docs/evidencias/A03/A03-B_200cm.mp4), [A03-B_mas_de_200cm.mp4](docs/evidencias/A03/A03-B_mas_de_200cm.mp4) |
+| A03-C | RF1, RF6 | 1. Alejar el objeto hasta que el sensor no reciba eco.<br>2. Volver a colocar el objeto a unos 30 cm. | `POST n NAN` (el eco no termina en 25 ms); en la tercera inválida seguida, `SET n ALL BLINK` y los tres LEDs parpadean.<br>Con el objeto a unos 30 cm, la primera lectura válida vuelve a MEDIUM. | Al alejar el objeto más allá de unos 260 cm, el eco dejó de volver: seq 3723–3752, 30 lecturas `NAN` seguidas, zona ERROR. Al acercarlo a unos 25–30 cm, el sistema volvió a MEDIUM. | Aprobada | [server_20261013_132637.csv](docs/evidencias/A03/server_20261013_132637.csv), [A03-B_mas_de_200cm.mp4](docs/evidencias/A03/A03-B_mas_de_200cm.mp4) |
 
-**Tabla 4.** Registro de los límites del rango (A03)
+**Tabla 4.** Registro de los límites del rango (A03), de las líneas `RF2 range limit` de `analyze_log.py` y del CSV `server_20261013_132637.csv`
 
-| Caso | `seq` inicial | Lecturas válidas | Mín. (cm) | Máx. (cm) | Zona mostrada | Veredicto |
+| Caso | `seq` | Lecturas válidas | Mín. (cm) | Máx. (cm) | Zona mostrada | Veredicto |
 |---|---|---|---|---|---|---|
-| 2 cm | | | | | | |
-| 1 cm (zona ciega) | — | | | | | |
-| 300 cm | | | | | | |
-| 400 cm | | | | | | |
-| Sin obstáculo al alcance | — | | | | | |
+| 2 cm | 2760–2769 | 10 de 10 | 2.3 | 2.3 | NEAR | PASS |
+| Zona ciega (menos de 2 cm) | 1896–1982 | Lecturas de 1.6–1.7 cm y `NAN`, inválidas | — | — | NEAR o ERROR | PASS |
+| 150 cm | 3200–3209 | 10 de 10 | 143.5 | 143.5 | FAR | PASS |
+| 190 cm | 3420–3429 | 10 de 10 | 184.5 | 184.9 | FAR | PASS |
+| 200 cm | 3550–3559 | 10 de 10 | 193.3 | 193.8 | FAR | PASS |
+| Más de 200 cm | 3663–3752 | 0: lecturas de 205.2 a 258.0 cm y `NAN` | — | — | ERROR | PASS |
+| Sin eco | 3723–3752 | 0: 30 `NAN` seguidas | — | — | ERROR | PASS |
 
-Si a 400 cm no se obtienen 10 lecturas válidas, el límite declarado no se cumple con este sensor y este montaje: se informa la mayor distancia que sí da 10 lecturas válidas y se analiza en §4.4.
+**Origen del límite de 200 cm.** La primera ejecución de A03 se hizo con el límite superior en 400 cm, el alcance de la hoja de datos del HC-SR04 ([server_20261013_131202.csv](docs/evidencias/A03/server_20261013_131202.csv)). Las lecturas fueron continuas hasta unos 190 cm; entre 200 y 255 cm aparecieron muchas `NAN`; cerca de 300 cm, entre el 30 % y el 90 % de las lecturas fueron `NAN`, y a 400 cm no llegó ninguna lectura válida (la mayor fue 295.7 cm). Como el alcance declarado no se cumplía, el límite superior del rango válido se redujo a 200 cm (`MAX_VALID_CM` en [config.py](server/config.py)) y A03 se ejecutó de nuevo con ese límite.
 
 #### A04. Histéresis con el sensor real
 
@@ -1387,8 +1389,8 @@ Comprueba que la histéresis evita los cambios de zona de un objeto quieto en un
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A04-A | RF5 | 1. Llevar el blanco de 10 a 20 cm y mantenerlo quieto 60 s.<br>2. Llevarlo a 30 cm y después a 40 cm, y mantenerlo quieto 60 s.<br>3. Observar los LEDs y la consola del servidor. | 0 eventos `SET` en cada ventana de 60 s; los LEDs no cambian.<br>A 20 cm el sistema sigue en NEAR y a 40 cm sigue en MEDIUM, porque llega desde esas zonas y no supera los umbrales de 22 y 42 cm. | | | |
-| A04-B | RF5 | 1. Deslizar el blanco despacio, a unos 1 cm/s, de 10 a 30 cm y de vuelta a 10 cm.<br>2. Hacer lo mismo de 30 a 50 cm y de vuelta a 30 cm.<br>3. Ejecutar `python -m tests.analyze_log`. | Línea `RF2/RF5/RF6 control` → `PASS`.<br>En su lista de cambios, aparte del primero desde ERROR, un solo cambio por cada cruce de frontera: NEAR → MEDIUM con una lectura ≥ 22.0 cm, MEDIUM → NEAR con una < 18.0 cm, MEDIUM → FAR con una ≥ 42.0 cm y FAR → MEDIUM con una < 38.0 cm. | | | |
+| A04-A | RF5 | 1. Llevar el blanco de 10 a 20 cm y mantenerlo quieto al menos 45 s.<br>2. Llevarlo a 30 cm y después a 40 cm, y mantenerlo quieto al menos 45 s.<br>3. Observar los LEDs y la consola del servidor. | 0 eventos `SET` mientras el blanco está quieto (al menos 45 s en cada frontera); los LEDs no cambian.<br>A 20 cm el sistema sigue en NEAR y a 40 cm sigue en MEDIUM, porque llega desde esas zonas y no supera los umbrales de 22 y 42 cm. | Frontera de 20 cm: blanco quieto 55.5 s (seq 2630–3185), 556 lecturas entre 18.1 y 20.8 cm, todas en NEAR y 0 `SET`; el LED rojo siguió parpadeando. 15 de esas lecturas fueron ≥ 20.0 cm, que sin histéresis habrían pasado a MEDIUM.<br>Frontera de 40 cm: blanco quieto 49.1 s (seq 3519–4003), 484 lecturas entre 37.8 y 41.6 cm, más una lectura suelta de 31.3 cm (seq 3713), todas en MEDIUM y 0 `SET`; el LED amarillo siguió parpadeando. 346 de esas lecturas fueron ≥ 40.0 cm, que sin histéresis habrían pasado a FAR. | Aprobada | [server_20261013_135158.csv](docs/evidencias/A04/server_20261013_135158.csv), [server_20261013_135325.csv](docs/evidencias/A04/server_20261013_135325.csv), [A04-A_20cm.mp4](docs/evidencias/A04/A04-A_20cm.mp4), [A04-A_40cm.mp4](docs/evidencias/A04/A04-A_40cm.mp4) |
+| A04-B | RF5 | 1. Deslizar el blanco despacio, a unos 1 cm/s, de 10 a 30 cm y de vuelta a 10 cm.<br>2. Hacer lo mismo de 30 a 50 cm y de vuelta a 30 cm.<br>3. Ejecutar `python -m tests.analyze_log`. | Línea `RF2/RF5/RF6 control` → `PASS`.<br>En su lista de cambios, aparte del primero desde ERROR, un solo cambio por cada cruce de frontera: NEAR → MEDIUM con una lectura ≥ 22.0 cm, MEDIUM → NEAR con una < 18.0 cm, MEDIUM → FAR con una ≥ 42.0 cm y FAR → MEDIUM con una < 38.0 cm. | Cruce de 20 cm: `PASS`. NEAR → MEDIUM en seq 4855 con 22.3 cm y MEDIUM → NEAR en seq 5159 con 17.9 cm. Llegaron 61 lecturas entre 18.0 y 22.0 cm (34 en NEAR al subir y 27 en MEDIUM al bajar) sin ningún cambio de más.<br>Cruce de 40 cm: `PASS`. MEDIUM → FAR en seq 304 con 42.1 cm y FAR → MEDIUM en seq 523 con 37.8 cm. Llegaron 65 lecturas entre 38.0 y 42.0 cm (35 en MEDIUM al subir y 30 en FAR al bajar) sin ningún cambio de más.<br>Observaciones: (1) al final del cruce de 20 cm hay un cuarto cambio, NEAR → MEDIUM en seq 5417 con 29.0 cm: el blanco se llevó de golpe de 9.8 a unos 30 cm al terminar, y el cambio es correcto. (2) Un primer intento del cruce de 40 cm ([server_20261013_135958.csv](docs/evidencias/A04/server_20261013_135958.csv)) no cumplió el criterio: con el blanco a unos 43 cm llegaron lecturas sueltas de 27.5 y 24.6 cm, que produjeron 4 cambios de zona de más; el cruce se repitió con la mano fuera del haz (§4.4). (3) En el cruce de 20 cm, los `ACK` de los dos cambios tardaron 373.0 y 3625.6 ms por la red WiFi; no afecta a la histéresis y se analiza en §4.4. | Aprobada | [server_20261013_135541.csv](docs/evidencias/A04/server_20261013_135541.csv), [server_20261013_140622.csv](docs/evidencias/A04/server_20261013_140622.csv), [A04-B_cruce_20cm.mp4](docs/evidencias/A04/A04-B_cruce_20cm.mp4), [A04-B_cruce_40cm.mp4](docs/evidencias/A04/A04-B_cruce_40cm.mp4) |
 
 #### A05. Tiempo de respuesta extremo a extremo
 
@@ -1433,7 +1435,7 @@ Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_cont
 
 | Clase de prueba | Casos | Qué comprueba | Requisito |
 |---|---|---|---|
-| `ClassifyTest` | 5 | Los límites exactos 1.9/2.0, 19.9/20.0, 39.9/40.0 y 400.0/400.1 cm, `NaN` e infinito | RF2 |
+| `ClassifyTest` | 5 | Los límites exactos 1.9/2.0, 19.9/20.0, 39.9/40.0 y 200.0/200.1 cm, `NaN` e infinito | RF2 |
 | `HysteresisTest` | 7 | Los cuatro umbrales (21.9/22.0, 18.0/17.9, 41.9/42.0 y 38.0/37.9 cm), los dos saltos y la salida directa de ERROR | RF5 |
 | `InvalidReadingTest` | 4 | Dos inválidas seguidas conservan la zona y su histéresis, la tercera da ERROR, una válida reinicia el conteo y `reset()` informa el cambio una sola vez | RF6 |
 | `CommandTest` | 1 | Cada zona tiene un comando y no hay dos iguales | RF3 |
@@ -1487,11 +1489,11 @@ El sensor simulado envía distancias exactas, imposibles de colocar con una regl
 | Caso | Lecturas enviadas (cm) | `SET` esperados |
 |---|---|---|
 | `test_boundaries_and_hysteresis` | 10.0, 19.9, 20.0, 21.9, 22.0, 39.9, 40.0, 41.9, 42.0, 38.0, 37.9, 20.0, 18.0, 17.9, NAN, NAN, NAN, 1.9, 25.0 | 1 `RED BLINK`, 5 `YELLOW BLINK`, 9 `WHITE ON`, 11 `YELLOW BLINK`, 14 `RED BLINK`, 17 `ALL BLINK`, 19 `YELLOW BLINK` |
-| `test_jumps_and_range_limits` | 10.0, 42.0, 17.9, 41.9, 2.0, 400.0, 400.1, inf, −5.0, 400.0 | 1 `RED BLINK`, 2 `WHITE ON`, 3 `RED BLINK`, 4 `YELLOW BLINK`, 5 `RED BLINK`, 6 `WHITE ON`, 9 `ALL BLINK`, 10 `WHITE ON` |
+| `test_jumps_and_range_limits` | 10.0, 42.0, 17.9, 41.9, 2.0, 200.0, 200.1, inf, −5.0, 200.0 | 1 `RED BLINK`, 2 `WHITE ON`, 3 `RED BLINK`, 4 `YELLOW BLINK`, 5 `RED BLINK`, 6 `WHITE ON`, 9 `ALL BLINK`, 10 `WHITE ON` |
 | `test_isolated_invalid_readings` | 30.0, NAN, NAN, 30.0, NAN, NAN, 18.0, NAN, NAN, NAN, 25.0 | 1 `YELLOW BLINK`, 10 `ALL BLINK`, 11 `YELLOW BLINK` |
 
 - **Primer escenario.** 21.9 cm no saca al sistema de NEAR y 22.0 cm sí; 41.9 cm no lo saca de MEDIUM y 42.0 cm sí; 38.0 y 18.0 cm no lo bajan de zona, y 37.9 y 17.9 cm sí. La tercera NAN seguida da ERROR, 1.9 cm (zona ciega) es inválida y 25.0 cm sale de ERROR sin histéresis.
-- **Segundo escenario.** NEAR → FAR y FAR → NEAR ocurren en una sola transición; 2.0 y 400.0 cm son válidos, y 400.1 cm, infinito y −5.0 cm son inválidos.
+- **Segundo escenario.** NEAR → FAR y FAR → NEAR ocurren en una sola transición; 2.0 y 200.0 cm son válidos, y 200.1 cm, infinito y −5.0 cm son inválidos.
 - **Tercer escenario.** Cada lectura válida reinicia el conteo de inválidas, y 18.0 cm no sale de MEDIUM porque la histéresis se conservó durante las inválidas.
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
@@ -1571,7 +1573,11 @@ La corrida solo requiere dejar el sistema funcionando; el veredicto sale por com
 
 [PENDIENTE: completar después de ejecutar el plan. Por cada caso fallido o en el límite: valor medido frente al criterio, causa identificada con la evidencia (red, firmware, montaje o instrumento) y acción tomada o recomendada en §7.]
 
+- **A03, alcance real menor que el de la hoja de datos.** Con el límite en 400 cm, las lecturas fueron continuas solo hasta unos 190 cm; más lejos aparecieron cada vez más `NAN` y a 400 cm no llegó ninguna lectura válida. El eco de una pared lejana es débil, el haz del HC-SR04 se abre unos 15° y el piso y los objetos cercanos devuelven ecos que interfieren. La acción tomada fue reducir el límite superior del rango válido a 200 cm (`MAX_VALID_CM`), de modo que el sistema solo declara lo que el sensor mide de forma confiable; fuera de ese rango muestra ERROR.
+- **A03, error a distancias largas.** En la segunda ejecución, con el límite en 200 cm, todas las distancias dieron 10 lecturas válidas, pero el sensor midió de 5 a 6.5 cm menos que la regla en 150, 190 y 200 cm (143.5, 184.9 y 193.6 cm). Es la misma tendencia de A02: un error sistemático que crece con la distancia. Como el límite se aplica a la lectura, un objeto a 200 cm reales todavía se muestra en FAR; la calibración recomendada en §7 reduciría esta diferencia.
 - **A02, error sistemático creciente con la distancia.** Todos los puntos cumplen RNF2, pero desde 40 cm el promedio queda por debajo de la regla (−1.31 cm a 40 cm, −2.04 cm a 60 cm y −2.44 cm a 100 cm), mientras la dispersión de cada punto es de 0.4 cm o menos. Un error que crece con la distancia y casi no varía entre lecturas apunta a una causa sistemática, no al ruido del sensor: la constante de conversión (`CM_PER_ECHO_US`) o la ubicación del cero de la regla respecto del frente de los transductores. A 100 cm el margen frente al límite de 3 cm es de 0.4 cm; la acción recomendada está en §7.
+- **A04, lecturas sueltas en el cruce de 40 cm.** En el primer intento ([server_20261013_135958.csv](docs/evidencias/A04/server_20261013_135958.csv)), con el blanco quieto a unos 43 cm, llegaron lecturas aisladas de 27.5 cm (seq 7569) y 24.6–24.4 cm (seq 7573–7574) entre lecturas de 41 a 43 cm. Un salto de unos 15 cm durante una o dos lecturas no es ruido del sensor (la dispersión de un objeto quieto es ≤ 1.0 cm, A02): es otro objeto más cercano dentro del haz, muy probablemente la mano que sostenía el blanco. El servidor clasificó cada lectura según la Tabla 2 (`RF2/RF5/RF6 control` → `PASS`), pero la histéresis de 2 cm no puede filtrar un salto de ese tamaño y hubo 4 cambios de zona de más. Al repetir el cruce sosteniendo el blanco desde atrás, fuera del haz, no apareció ninguna lectura suelta. La mejora posible está en §7.
+- **A04, latencia de la red WiFi.** En [server_20261013_135541.csv](docs/evidencias/A04/server_20261013_135541.csv), el `ACK` del cambio a MEDIUM llegó 373.0 ms después del `SET` y el del cambio a NEAR, 3625.6 ms después; en los demás CSV de A04 los `ACK` tardaron de 10.3 a 124.8 ms. Durante esos 3.6 s las lecturas de OI-1 siguieron llegando a su ritmo normal (41 `POST`), así que el servidor no se detuvo: el retardo estuvo en el tramo del `SET` hacia OI-2 y de su `ACK` de vuelta, es decir, en el enlace WiFi de OI-2. Un retardo de 3.6 s superaría el límite de 1000 ms de RNF3, así que A05 se ejecuta con el punto de acceso cerca de los ESP32 y sin ahorro de energía en el adaptador WiFi de la PC (§7).
 
 Fuentes de error conocidas, para orientar el análisis:
 
@@ -1591,7 +1597,10 @@ Fuentes de error conocidas, para orientar el análisis:
 
 [PENDIENTE: recomendaciones ligadas a los hallazgos de las pruebas.]
 
+- **Alcance mayor (A03).** Para indicar distancias de más de 2 m haría falta un sensor de mayor alcance o un blanco de mayor superficie; con el HC-SR04 y este montaje, el límite confiable es 200 cm.
 - **Calibrar la distancia (A02).** Medir dos o tres distancias de referencia, calcular el factor entre la distancia real y la medida, y ajustar `SensorConfig::CM_PER_ECHO_US` con ese factor. Así se elimina el error sistemático que crece con la distancia y se gana margen frente al límite de 3 cm de RNF2.
+- **Descartar lecturas sueltas (A04).** Clasificar con la mediana de las 3 últimas lecturas válidas en lugar de la última: una lectura aislada, como las de 27.5 y 24.6 cm del primer intento de A04-B, no cambiaría la zona. El costo es hasta 200 ms más de respuesta, dentro del margen de RNF3.
+- **Red WiFi estable (A04).** Ubicar el punto de acceso cerca de los ESP32, usar un canal poco congestionado y desactivar el ahorro de energía del adaptador WiFi de la PC, para evitar retardos como el `ACK` de 3625.6 ms de A04-B.
 
 Limitaciones conocidas del diseño y cómo resolverlas:
 
@@ -1608,3 +1617,4 @@ Limitaciones conocidas del diseño y cómo resolverlas:
 | A2 | [docs/img/circuito_oi2_actuador.svg](docs/img/circuito_oi2_actuador.svg) | Esquema eléctrico de OI-2, con las resistencias de los LEDs | — |
 | A3 | Bloques `mermaid` de este informe | Fuentes editables de los diagramas de arquitectura, clases, secuencia y estados | — |
 
+[PENDIENTE: fotos del montaje de OI-1 y OI-2; videos de A01, A05 y B05; carpeta `docs/evidencias/` con el CSV del servidor, los logs de OI-1 y OI-2 y la salida de los scripts de cada prueba.]
