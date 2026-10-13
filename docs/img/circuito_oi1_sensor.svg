@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" font-family="Arial, Helvetica, sans-serif">
+  <rect width="920" height="560" fill="#ffffff"/>
+  <text x="460" y="32" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">OI-1 Sensor: ESP32 DevKit (30 pines) + HC-SR04</text>
+
+  <!-- ESP32 board -->
+  <rect x="40" y="70" width="230" height="380" rx="10" fill="#e8eef7" stroke="#2b4a7a" stroke-width="2"/>
+  <text x="155" y="100" text-anchor="middle" font-size="16" font-weight="bold" fill="#2b4a7a">ESP32 DevKit</text>
+  <text x="155" y="120" text-anchor="middle" font-size="13" fill="#2b4a7a">30 pines</text>
+  <rect x="120" y="455" width="70" height="22" rx="3" fill="#bbb" stroke="#555"/>
+  <text x="155" y="471" text-anchor="middle" font-size="12" fill="#222">USB 5 V</text>
+
+  <text x="255" y="155" text-anchor="end" font-size="14" fill="#222">VIN (5 V)</text>
+  <circle cx="270" cy="150" r="5" fill="#2b4a7a"/>
+  <text x="255" y="235" text-anchor="end" font-size="14" fill="#222">GPIO27 (D27)</text>
+  <circle cx="270" cy="230" r="5" fill="#2b4a7a"/>
+  <text x="255" y="315" text-anchor="end" font-size="14" fill="#222">GPIO26 (D26)</text>
+  <circle cx="270" cy="310" r="5" fill="#2b4a7a"/>
+  <text x="255" y="415" text-anchor="end" font-size="14" fill="#222">GND</text>
+  <circle cx="270" cy="410" r="5" fill="#2b4a7a"/>
+
+  <!-- HC-SR04 -->
+  <rect x="660" y="110" width="210" height="300" rx="10" fill="#eef6ee" stroke="#2f6b2f" stroke-width="2"/>
+  <circle cx="725" cy="355" r="30" fill="#ffffff" stroke="#2f6b2f" stroke-width="2"/>
+  <circle cx="805" cy="355" r="30" fill="#ffffff" stroke="#2f6b2f" stroke-width="2"/>
+  <text x="765" y="140" text-anchor="middle" font-size="16" font-weight="bold" fill="#2f6b2f">HC-SR04</text>
+  <circle cx="660" cy="150" r="5" fill="#2f6b2f"/>
+  <text x="675" y="155" font-size="14" fill="#222">VCC</text>
+  <circle cx="660" cy="230" r="5" fill="#2f6b2f"/>
+  <text x="675" y="235" font-size="14" fill="#222">TRIG</text>
+  <circle cx="660" cy="270" r="5" fill="#2f6b2f"/>
+  <text x="675" y="275" font-size="14" fill="#222">ECHO</text>
+  <circle cx="660" cy="300" r="5" fill="#2f6b2f"/>
+  <text x="675" y="305" font-size="14" fill="#222">GND</text>
+
+  <!-- VIN -> VCC (5 V) -->
+  <polyline points="270,150 660,150" fill="none" stroke="#c62828" stroke-width="3"/>
+  <text x="465" y="142" text-anchor="middle" font-size="13" fill="#c62828">5 V</text>
+
+  <!-- GPIO27 -> TRIG -->
+  <polyline points="270,230 660,230" fill="none" stroke="#1565c0" stroke-width="3"/>
+  <text x="465" y="222" text-anchor="middle" font-size="13" fill="#1565c0">TRIG: pulso de 10 µs a 3.3 V</text>
+
+  <!-- ECHO -> R1 -> node -> GPIO26 -->
+  <polyline points="660,270 610,270 610,310 590,310" fill="none" stroke="#ef6c00" stroke-width="3"/>
+  <rect x="520" y="298" width="70" height="24" fill="#fff" stroke="#222" stroke-width="2"/>
+  <text x="555" y="290" text-anchor="middle" font-size="13" fill="#222">R1 = 1 kΩ</text>
+  <polyline points="520,310 430,310" fill="none" stroke="#ef6c00" stroke-width="3"/>
+  <circle cx="430" cy="310" r="6" fill="#222"/>
+  <polyline points="430,310 270,310" fill="none" stroke="#ef6c00" stroke-width="3"/>
+  <text x="350" y="302" text-anchor="middle" font-size="13" fill="#ef6c00">≈ 3.33 V</text>
+  <text x="625" y="262" font-size="13" fill="#ef6c00" text-anchor="end">5 V</text>
+
+  <!-- node -> R2a -> R2b -> GND -->
+  <polyline points="430,310 430,330" fill="none" stroke="#222" stroke-width="2"/>
+  <rect x="418" y="330" width="24" height="50" fill="#fff" stroke="#222" stroke-width="2"/>
+  <polyline points="430,380 430,395" fill="none" stroke="#222" stroke-width="2"/>
+  <rect x="418" y="395" width="24" height="50" fill="#fff" stroke="#222" stroke-width="2"/>
+  <polyline points="430,445 430,490" fill="none" stroke="#222" stroke-width="2"/>
+  <text x="452" y="360" font-size="13" fill="#222">1 kΩ</text>
+  <text x="452" y="425" font-size="13" fill="#222">1 kΩ</text>
+  <text x="452" y="462" font-size="13" fill="#222">R2 = 2 kΩ</text>
+
+  <!-- GND bus -->
+  <polyline points="270,410 310,410 310,490 640,490 640,300 660,300" fill="none" stroke="#222" stroke-width="3"/>
+  <line x1="355" y1="500" x2="385" y2="500" stroke="#222" stroke-width="2"/>
+  <line x1="361" y1="506" x2="379" y2="506" stroke="#222" stroke-width="2"/>
+  <line x1="366" y1="512" x2="374" y2="512" stroke="#222" stroke-width="2"/>
+  <line x1="370" y1="490" x2="370" y2="500" stroke="#222" stroke-width="2"/>
+  <text x="520" y="482" text-anchor="middle" font-size="13" fill="#222">GND común</text>
+
+  <!-- formula -->
+  <text x="40" y="540" font-size="14" fill="#222">Divisor de ECHO: V(GPIO26) = 5 V × R2 / (R1 + R2) = 5 V × 2 kΩ / 3 kΩ ≈ 3.33 V  (máximo admitido por el ESP32: 3.6 V)</text>
+</svg>
