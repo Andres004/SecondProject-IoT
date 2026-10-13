@@ -248,10 +248,10 @@ class ControlTest(SystemCase):
             "SET 19 YELLOW BLINK"])
 
     def test_jumps_and_range_limits(self):
-        """RF2, RF6: jumps NEAR <-> FAR and the limits 2.0 and 400.0 cm."""
+        """RF2, RF6: jumps NEAR <-> FAR and the limits 2.0 and 200.0 cm."""
         self.run_scenario([
-            "10.0", "42.0", "17.9", "41.9", "2.0", "400.0", "400.1", "inf",
-            "-5.0", "400.0"], [
+            "10.0", "42.0", "17.9", "41.9", "2.0", "200.0", "200.1", "inf",
+            "-5.0", "200.0"], [
             "SET 1 RED BLINK", "SET 2 WHITE ON", "SET 3 RED BLINK",
             "SET 4 YELLOW BLINK", "SET 5 RED BLINK", "SET 6 WHITE ON",
             "SET 9 ALL BLINK", "SET 10 WHITE ON"])
