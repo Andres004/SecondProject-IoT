@@ -13,7 +13,7 @@
 // until it returns true, and then distanceCm().
 class UltrasonicSensor {
  public:
-  UltrasonicSensor(uint8_t trigPin, uint8_t echoPin);
+  explicit UltrasonicSensor(uint8_t trigPin, uint8_t echoPin);
 
   // Configures the pins and enables the interrupt of ECHO.
   void begin();

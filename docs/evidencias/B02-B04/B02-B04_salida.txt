@@ -28,9 +28,9 @@ test_silent_sensor (__main__.DisconnectionTest.test_silent_sensor)
 RF7 (a): a sensor silent for 1.0 s is lost -> ERROR. ... ok
 
 ----------------------------------------------------------------------
-Ran 14 tests in 2.889s
+Ran 14 tests in 3.167s
 
 OK
 
-  ERROR reached the actuator 2 ms after the last reading 
-  ERROR reached the actuator 1016 ms after the last reading 
+  ERROR reached the actuator 5 ms after the last reading 
+  ERROR reached the actuator 1015 ms after the last reading 

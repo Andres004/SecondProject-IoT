@@ -124,8 +124,9 @@ class ControlServer:
                      line: str) -> str | None:
         """Process one message and return the role of the client.
 
-        Only a registered sensor may send POST and only a registered
-        actuator may send ACK.
+        Only the registered sensor may send POST and only the registered
+        actuator may send ACK. A connection replaced by a newer REGISTER
+        of the same role is no longer registered.
         """
         # Empty or too long lines are not valid messages.
         parts = line.split()
@@ -137,7 +138,7 @@ class ControlServer:
         try:
             if command == "REGISTER":
                 return self._on_register(conn, args)
-            if role is None:
+            if role is None or not self._is_current(conn, role):
                 self._reject(conn, "NOT_REGISTERED", line)
             elif command == "POST" and role == "SENSOR":
                 self._on_post(args)
@@ -148,6 +149,12 @@ class ControlServer:
         except ValueError:
             self._reject(conn, "BAD_FORMAT", line)
         return role
+
+    def _is_current(self, conn: socket.socket, role: str) -> bool:
+        """Return True if conn is the client registered now with role."""
+        with self.lock:
+            current = self.sensor if role == "SENSOR" else self.actuator
+            return conn is current
 
     def _on_register(self, conn: socket.socket, args: list[str]) -> str:
         """REGISTER <role>: save the client under its role.

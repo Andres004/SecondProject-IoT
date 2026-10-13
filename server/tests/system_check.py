@@ -321,6 +321,11 @@ class DisconnectionTest(SystemCase):
         new_sensor = self.connect("SENSOR")
         new_sensor.send("POST 1 10.0")
         self.expect_set(actuator, "SET 1 RED BLINK")
+        # The replaced sensor is no longer registered: its readings are
+        # rejected and do not change the zone.
+        old_sensor.send("POST 2 50.0")
+        self.assertEqual(old_sensor.receive(SILENCE_S), "ERROR NOT_REGISTERED")
+        self.assertIsNone(actuator.receive(SILENCE_S))
         # Closing the replaced sensor must not put the system in ERROR.
         old_sensor.close()
         self.assertIsNone(actuator.receive(SILENCE_S))
@@ -358,6 +363,10 @@ class DisconnectionTest(SystemCase):
         self.expect_set(new_actuator, "SET 2 RED BLINK")
         # Commands only go to the actuator that registered last.
         self.assertIsNone(old_actuator.receive(SILENCE_S))
+        # The replaced actuator is no longer registered: its ACK is rejected.
+        old_actuator.send("ACK 2")
+        self.assertEqual(old_actuator.receive(SILENCE_S),
+                         "ERROR NOT_REGISTERED")
         self.close_sensor(sensor, new_actuator)
 
     def test_send_failure(self):

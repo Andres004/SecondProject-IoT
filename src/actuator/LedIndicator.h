@@ -18,7 +18,7 @@ enum class LedMode : uint8_t { On, Blink };
 // every loop(). At the start all LEDs blink.
 class LedIndicator {
  public:
-  LedIndicator(uint8_t redPin, uint8_t yellowPin, uint8_t whitePin);
+  explicit LedIndicator(uint8_t redPin, uint8_t yellowPin, uint8_t whitePin);
 
   // Configures the pins as outputs and shows the starting state.
   void begin();

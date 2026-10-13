@@ -128,7 +128,7 @@ stateDiagram-v2
 | RNF2 | Exactitud | Error absoluto de cada lectura individual ≤ 3 cm respecto a una regla, en el rango de trabajo de 5 a 100 cm. | Al menos 10 lecturas por punto de referencia, en puntos repartidos entre 5 y 100 cm que incluyen ambos extremos y las fronteras de 20 y 40 cm. Se informan mínimo, máximo, promedio, error máximo individual y error del promedio. | A02 |
 | RNF3 | Tiempo de respuesta extremo a extremo | ≤ 1 s en el peor caso medido, desde que el objeto cruza el umbral de transición hasta que OI-2 muestra el nuevo estado. | En al menos 10 cambios de zona: 100 ms + `latency_ms` del CSV del servidor. | A05 |
 | RNF4 | Frecuencia de muestreo | ≥ 5 lecturas/s enviadas por OI-1 y recibidas por el servidor. El diseño es de 10 lecturas/s. | Conteo de eventos `POST` del CSV del servidor en cada ventana de 10 s de la corrida de 10 min. Como `seq` aumenta de uno en uno, los saltos de `seq` muestran las lecturas enviadas que no llegaron. | B07 |
-| RNF5 | Tiempo de reconexión | ≤ 3 s desde que el servidor vuelve a escuchar hasta que cada cliente queda registrado. | Reloj del servidor: t(`REGISTER`) − t(`START`) en al menos 3 reinicios del servidor. | B06 |
+| RNF5 | Tiempo de reconexión | ≤ 3 s desde que el servidor vuelve a escuchar hasta que cada cliente queda registrado. | Reloj del servidor: t(`REGISTER`) − t(`START`) en cada arranque del servidor con los dos clientes esperando: los 2 reinicios de B06 y los arranques de B07, A07 y A08. | B06 |
 
 Justificación de los valores declarados:
 
@@ -139,22 +139,20 @@ Justificación de los valores declarados:
 
 ### 1.6 Matriz de trazabilidad
 
-| Requisito | Diseño | Implementación | Prueba |
-|---|---|---|---|
-| RF1 Medir la distancia | §2.2 circuito de OI-1 | [UltrasonicSensor.cpp](src/sensor/UltrasonicSensor.cpp): `UltrasonicSensor` | A01, A02, A03, A06, B05 |
-| RF2 Tres rangos | §1.3 (Tabla 1); §1.4 (Figura 1) | [zone_controller.py](server/zone_controller.py): `classify()` | A01, A03, B01, B03, B07 |
-| RF3 Comportamiento por rango | §1.3; §2.2 circuito de OI-2 | `ACTUATOR_COMMANDS`; [LedIndicator.cpp](src/actuator/LedIndicator.cpp) | A01, B01, B03, B05 |
-| RF4 TCP sobre WiFi y protocolo propio | §2.1 arquitectura; §2.4 secuencia; §2.5 protocolo | [TcpLink.cpp](lib/TcpLink/TcpLink.cpp); [tcp_server.py](server/tcp_server.py); `handleLine()` de OI-2 | A01, B02, B05, B07 |
-| RF5 Histéresis | §1.4 (Tabla 2 y Figura 1) | `ZoneController._next_zone()` | A04, B01, B03, B07 |
-| RF6 Lecturas inválidas | §1.4; §2.4 secuencia de fallas | `sendReading()` de OI-1; `ZoneController.update()` | A03, A06, B01, B03, B07 |
-| RF7 Falla segura y reconexión | §1.3; §2.4 secuencia de fallas | `ControlServer._on_disconnect()`; `TcpLink::update()`; `loop()` de OI-2 | A07, A08, B04, B05, B06 |
-| RNF1 Estabilidad | §3.7 temporización | Diseño sin bloqueos; reconexión de `TcpLink` | B07 |
-| RNF2 Exactitud | §2.2 circuito de OI-1; §3.6.3 | `SensorConfig::CM_PER_ECHO_US`; `UltrasonicSensor` | A02 |
-| RNF3 Tiempo de respuesta | §1.5; §2.5.4 | `_on_post()`, `_send_command()` y `_on_ack()`; Nagle desactivado | A05 |
-| RNF4 Frecuencia de muestreo | §3.7 temporización | `SensorConfig::SAMPLE_PERIOD_MS = 100` | B05, B07 |
-| RNF5 Tiempo de reconexión | §2.4 secuencia de fallas | `TcpLink::RECONNECT_INTERVAL_MS` y `CONNECT_TIMEOUT_MS` | B06 |
-
-[PENDIENTE: agregar a esta matriz la columna de resultado y evidencia cuando se ejecute el plan de pruebas de §4.]
+| Requisito | Diseño | Implementación | Prueba | Resultado |
+|---|---|---|---|---|
+| RF1 Medir la distancia | §2.2 circuito de OI-1 | [UltrasonicSensor.cpp](src/sensor/UltrasonicSensor.cpp): `UltrasonicSensor` | A01, A02, A03, A06, B05 | Cumple: 70 lecturas de A02 y límites de A03 (§4.2) |
+| RF2 Tres rangos | §1.3 (Tabla 1); §1.4 (Figura 1) | [zone_controller.py](server/zone_controller.py): `classify()` | A01, A03, B01, B03, B07 | Cumple: 0 zonas distintas del algoritmo (B03, B07) |
+| RF3 Comportamiento por rango | §1.3; §2.2 circuito de OI-2 | `ACTUATOR_COMMANDS`; [LedIndicator.cpp](src/actuator/LedIndicator.cpp) | A01, B01, B03, B05 | Cumple: A01 y B05 (§4.2, §4.3) |
+| RF4 TCP sobre WiFi y protocolo propio | §2.1 arquitectura; §2.4 secuencia; §2.5 protocolo | [TcpLink.cpp](lib/TcpLink/TcpLink.cpp); [tcp_server.py](server/tcp_server.py); `handleLine()` de OI-2 | A01, B02, B05, B07 | Cumple: B02 4 de 4, 0 `PROTOCOL_ERROR` en B07 |
+| RF5 Histéresis | §1.4 (Tabla 2 y Figura 1) | `ZoneController._next_zone()` | A04, B01, B03, B07 | Cumple: 0 `SET` con el blanco quieto en 20 y 40 cm (A04) |
+| RF6 Lecturas inválidas | §1.4; §2.4 secuencia de fallas | `sendReading()` de OI-1; `ZoneController.update()` | A03, A06, B01, B03, B07 | Cumple: ERROR en la 3.ª `NAN`, 3 de 3 (A06) |
+| RF7 Falla segura y reconexión | §1.3; §2.4 secuencia de fallas | `ControlServer._on_disconnect()`; `TcpLink::update()`; `loop()` de OI-2 | A07, A08, B04, B05, B06 | Cumple: ACK 0 en 1033–1187 ms (A07, A08); B04 7 de 7 |
+| RNF1 Estabilidad | §3.7 temporización | Diseño sin bloqueos; reconexión de `TcpLink` | B07 | Cumple: 12.0 min, 0 reinicios, intervalo máx. 926.9 ms (B07) |
+| RNF2 Exactitud | §2.2 circuito de OI-1; §3.6.3 | `SensorConfig::CM_PER_ECHO_US`; `UltrasonicSensor` | A02 | Cumple: error máx. individual 2.6 cm (A02) |
+| RNF3 Tiempo de respuesta | §1.5; §2.5.4 | `_on_post()`, `_send_command()` y `_on_ack()`; Nagle desactivado | A05 | Cumple en red normal; 5 excepciones con la red degradada (§5) |
+| RNF4 Frecuencia de muestreo | §3.7 temporización | `SensorConfig::SAMPLE_PERIOD_MS = 100` | B05, B07 | Cumple: 10.0 lecturas/s (B07) |
+| RNF5 Tiempo de reconexión | §2.4 secuencia de fallas | `TcpLink::RECONNECT_INTERVAL_MS` y `CONNECT_TIMEOUT_MS` | B06 | Cumple: máx. 1927 ms (B06, B07, A07, A08) |
 
 ---
 
@@ -203,7 +201,7 @@ flowchart LR
 | OI-1 Sensor | ESP32 DevKit de 30 pines + HC-SR04 | Firmware C++ (Arduino-ESP32 2.0.17), entorno `sensor` de PlatformIO | Cliente: inicia la conexión | IP por DHCP; puerto local efímero hacia `SERVER_HOST:5050` | USB 5 V (PC o power bank) | Monitor serie a 115200 baud, guardado con `log2file` |
 | OI-2 Actuador | ESP32-DevKitC de 38 pines + 3 LEDs | Firmware C++ (Arduino-ESP32 2.0.17), entorno `actuator` | Cliente: inicia la conexión | IP por DHCP; puerto local efímero hacia `SERVER_HOST:5050` | USB 5 V (PC o power bank) | Monitor serie a 115200 baud, guardado con `log2file` |
 | Servidor | PC con Windows 11 | [tcp_server.py](server/tcp_server.py), Python 3.10 o superior | Servidor: escucha | IP de la PC en la red local (DHCP); puerto 5050 en todas las interfaces | Propia de la PC | Consola y CSV en `server/logs/` |
-| Punto de acceso | [PENDIENTE: equipo usado como punto de acceso, por ejemplo el hotspot de un celular] | — | — | Asigna las IP por DHCP | — | — |
+| Punto de acceso | Router WiFi doméstico, 2.4 GHz | — | — | Asigna las IP por DHCP; la PC recibe siempre 192.168.1.32 por una reserva DHCP en el router | — | — |
 
 #### Recorrido de una lectura por las capas TCP/IP
 
@@ -485,6 +483,7 @@ classDiagram
         +serve_forever() None
         -_serve_client(conn: socket, address: tuple) None
         -_handle_line(conn: socket, role: str | None, line: str) str | None
+        -_is_current(conn: socket, role: str) bool
         -_on_register(conn: socket, args: list[str]) str
         -_on_post(args: list[str]) None
         -_on_ack(args: list[str]) None
@@ -726,7 +725,7 @@ sequenceDiagram
 4. OI-1 envía un `POST` por lectura, 10 por segundo, sin esperar respuesta.
 5. El servidor envía `SET` solo en los casos de §2.5.5. OI-2 responde `ACK` con el mismo `seq` después de aplicar el comando.
 6. Ningún mensaje de error cierra la conexión. Una conexión solo termina porque un extremo la cierra, por un error de red o por el timeout del sensor.
-7. Un `REGISTER` nuevo con un rol ocupado reemplaza al cliente anterior; el servidor ignora la conexión vieja hasta que se cierra.
+7. Un `REGISTER` nuevo con un rol ocupado reemplaza al cliente anterior. Desde ese momento la conexión vieja ya no está registrada: cualquier mensaje suyo (`POST` o `ACK`) recibe `ERROR NOT_REGISTERED` y no cambia la zona, y su cierre posterior no produce ERROR.
 
 Los diagramas de §2.4 muestran estas secuencias con mensajes reales.
 
@@ -748,7 +747,7 @@ El servidor envía `SET` solo en tres casos: cuando la zona cambia, cuando se re
 | Situación | Quién la detecta | Respuesta | Efecto en el sistema |
 |---|---|---|---|
 | Línea vacía o de más de 32 caracteres | Servidor | `ERROR BAD_FORMAT` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
-| Mensaje antes de `REGISTER` | Servidor | `ERROR NOT_REGISTERED` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
+| Mensaje antes de `REGISTER`, o desde una conexión reemplazada por un `REGISTER` más reciente del mismo rol | Servidor | `ERROR NOT_REGISTERED` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta y el mensaje no cambia la zona |
 | Rol desconocido, campos de más o de menos, número no válido | Servidor | `ERROR BAD_FORMAT` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
 | `POST` de un cliente que no es el sensor, `ACK` de uno que no es el actuador o comando desconocido | Servidor | `ERROR UNKNOWN_CMD` | Evento `PROTOCOL_ERROR`; la conexión sigue abierta |
 | Lectura no finita o fuera de 2 a 200 cm | Servidor | Ninguna: no es un error de protocolo | Cuenta como lectura inválida (RF6) |
@@ -818,7 +817,8 @@ Las versiones indicadas son las instaladas en el equipo con el que se compilaron
 
 ```text
 SecondProject-IoT/
-├── README.md                 Este informe
+├── README.md                 Presentación del proyecto y enlace al informe
+├── Informe.md                Este informe
 ├── platformio.ini            Un proyecto de PlatformIO con dos entornos: sensor y actuator
 ├── .gitignore                Excluye compilados, credenciales, logs generados y archivos locales
 ├── .vscode/extensions.json   Extensión recomendada (PlatformIO IDE)
@@ -1055,7 +1055,7 @@ Los hilos comparten el controlador, los sockets del sensor y del actuador y los 
 
 #### 3.6.6 Recepción, framing y validación en el servidor
 
-`makefile()` convierte el flujo de bytes en líneas terminadas en `\n` ([tcp_server.py, líneas 107 a 121](server/tcp_server.py#L107-L121)). `_handle_line()` valida cada línea antes de despacharla. El rol es una variable local del hilo de cada conexión, y los errores de argumentos (faltantes, sobrantes o no numéricos) llegan como `ValueError` ([tcp_server.py, líneas 123 a 150](server/tcp_server.py#L123-L150)):
+`makefile()` convierte el flujo de bytes en líneas terminadas en `\n` ([tcp_server.py, líneas 107 a 121](server/tcp_server.py#L107-L121)). `_handle_line()` valida cada línea antes de despacharla. El rol es una variable local del hilo de cada conexión, y los errores de argumentos (faltantes, sobrantes o no numéricos) llegan como `ValueError` ([tcp_server.py, líneas 123 a 151](server/tcp_server.py#L123-L151)). `_is_current()` comprueba, dentro del `lock`, que la conexión sea la registrada ahora con ese rol; una conexión reemplazada por un `REGISTER` más reciente recibe `ERROR NOT_REGISTERED` ([tcp_server.py, líneas 153 a 157](server/tcp_server.py#L153-L157)):
 
 ```python
         parts = line.split()
@@ -1066,7 +1066,7 @@ Los hilos comparten el controlador, los sockets del sensor y del actuador y los 
         try:
             if command == "REGISTER":
                 return self._on_register(conn, args)
-            if role is None:
+            if role is None or not self._is_current(conn, role):
                 self._reject(conn, "NOT_REGISTERED", line)
             elif command == "POST" and role == "SENSOR":
                 self._on_post(args)
@@ -1110,7 +1110,7 @@ Los hilos comparten el controlador, los sockets del sensor y del actuador y los 
 
 #### 3.6.8 Envío del comando y medición de la latencia
 
-`_on_post()` toma `t_post`, ejecuta el algoritmo, registra la lectura y, si la zona cambió, envía el comando con el `seq` de esa lectura ([tcp_server.py, líneas 174 a 186](server/tcp_server.py#L174-L186)):
+`_on_post()` toma `t_post`, ejecuta el algoritmo, registra la lectura y, si la zona cambió, envía el comando con el `seq` de esa lectura ([tcp_server.py, líneas 181 a 193](server/tcp_server.py#L181-L193)):
 
 ```python
         with self.lock:
@@ -1122,7 +1122,7 @@ Los hilos comparten el controlador, los sockets del sensor y del actuador y los 
                 self._send_command(seq, t_post)
 ```
 
-`_send_command()` envía `SET <seq> <comando>` y guarda en `pending` el instante que lo causó ([tcp_server.py, líneas 216 a 237](server/tcp_server.py#L216-L237)). Cuando llega el `ACK`, `_on_ack()` calcula la latencia con el mismo reloj ([tcp_server.py, líneas 188 a 200](server/tcp_server.py#L188-L200)):
+`_send_command()` envía `SET <seq> <comando>` y guarda en `pending` el instante que lo causó ([tcp_server.py, líneas 223 a 244](server/tcp_server.py#L223-L244)). Cuando llega el `ACK`, `_on_ack()` calcula la latencia con el mismo reloj ([tcp_server.py, líneas 195 a 207](server/tcp_server.py#L195-L207)):
 
 ```python
             t_ack = self.log.now_ms()
@@ -1205,7 +1205,7 @@ void loop() {
 
 - **Sin `delay()`.** Ningún firmware usa `delay()`, `delayMicroseconds()` ni `pulseIn()`. Cada tarea periódica compara el tiempo transcurrido con su intervalo y vuelve de inmediato si todavía no corresponde actuar.
 - **Resta sin signo.** Todas las comparaciones usan la forma `now - last >= INTERVAL` con variables `unsigned long`. La resta sin signo da el tiempo transcurrido correcto aunque el contador se desborde: `millis()` vuelve a 0 cada 2<sup>32</sup> ms ≈ 49.7 días y `micros()`, cada 2<sup>32</sup> µs ≈ 71.6 min.
-- **Única espera acotada.** `client_.connect()` espera como máximo 250 ms, y solo mientras el servidor no responde. Si la PC rechaza la conexión porque el puerto está cerrado, el intento falla enseguida; si el firewall descarta los paquetes en silencio, dura los 250 ms completos. En ese caso, en OI-2 una de cada ocho inversiones del parpadeo de ERROR (2 s / 250 ms = 8) puede alargarse hasta unos 500 ms.
+- **Esperas acotadas.** Dos llamadas pueden detener `loop()`. (1) `client_.connect()` espera como máximo 250 ms, y solo mientras el servidor no responde. Si la PC rechaza la conexión porque el puerto está cerrado, el intento falla enseguida; si el firewall descarta los paquetes en silencio, dura los 250 ms completos. En ese caso, en OI-2 una de cada ocho inversiones del parpadeo de ERROR (2 s / 250 ms = 8) puede alargarse hasta unos 500 ms. (2) `client_.printf()` en `TcpLink::send()` vuelve de inmediato mientras hay lugar en el buffer TCP, pero si la red se corta sin cerrar la conexión espera hasta que la pila TCP la da por perdida. En A06 duró 1.66 s en OI-1 (§4.4); la solución está en §7.
 - **Tiempo de adquisición.** Desde que el objeto llega a una posición hasta que sale el `POST` pasan como máximo 100 ms (la espera hasta la siguiente medición) más la duración del eco: unos 2.4 ms a 42 cm y 25 ms en el peor caso.
 
 ### 3.8 Registro de eventos (logs)
@@ -1257,7 +1257,7 @@ Uso de los logs en las mediciones:
 - **Programación orientada a objetos.** Cada responsabilidad está en una clase: `UltrasonicSensor`, `LedIndicator`, `TcpLink`, `ZoneController`, `ControlServer` y `EventLog`. Los archivos principales solo crean los objetos y los coordinan.
 - **Modularidad.** La librería `lib/` se escribe una sola vez y la usan los dos firmwares. En el servidor, la configuración, el algoritmo de control (sin código de red), el servidor TCP, las pruebas y el simulador están en módulos separados.
 - **Sin números mágicos.** Los pines, los umbrales, los tiempos y los tamaños son constantes con nombre, definidas una sola vez: `constexpr` dentro de un namespace en C++ y constantes de módulo en Python. Los umbrales de las zonas existen solo en el servidor.
-- **Sin bloqueos.** No hay `delay()` ni `pulseIn()`; el eco se mide por interrupción y todos los tiempos se controlan con `millis()` y `micros()`.
+- **Sin esperas activas.** No hay `delay()` ni `pulseIn()`; el eco se mide por interrupción y los tiempos se controlan con `millis()` y `micros()`. Las únicas esperas posibles son las dos llamadas de red de §3.7.
 - **Convenciones de C++.** Estándar C++11 (`gnu++11`, el de Arduino-ESP32 2.x); formato al estilo de la guía de Google (sangría de 2 espacios, `public:` y `private:` con un espacio, dos espacios antes de los comentarios de línea, líneas de 100 columnas como máximo); nombres al estilo de las bibliotecas de Arduino: clases en PascalCase, métodos y variables en camelCase, miembros privados con `_` final y constantes en MAYÚSCULAS. Se usan `enum class`, `static_cast`, `constexpr`, constructores `explicit`, métodos `const` y guardas de inclusión.
 - **Convenciones de Python.** PEP 8 (79 columnas como máximo), docstrings PEP 257 en cada módulo, clase y función, y anotaciones de tipo. Funciones y variables en snake_case, clases en PascalCase, constantes en MAYÚSCULAS y métodos internos con `_` inicial.
 - **Documentación en el código.** Cada `.h` explica el contrato de sus métodos públicos: qué hacen, en qué unidades trabajan y qué devuelven ante un error. Por ejemplo, `distanceCm()` devuelve centímetros o `NAN`, y `send()` devuelve `false` si el mensaje no salió. En el servidor, los docstrings cumplen la misma función. Los comentarios, los nombres y los logs están en inglés; el informe, en español.
@@ -1425,7 +1425,7 @@ Comprueba que, sin red, OI-2 muestra ERROR por sí mismo y que los tres nodos se
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A08 | RF7 (a), RF7 (b), RF7 (c) | 1. Blanco a 30 cm (MEDIUM).<br>2. Apagar el punto de acceso durante 40 s y volver a encenderlo.<br>3. Comprobar con `ipconfig` que la PC conserva la IP del evento `START`; si cambió, la repetición no cuenta.<br>4. Repetir una vez más.<br>5. Ejecutar `python -m tests.analyze_log` con el CSV y con los logs de OI-1 y OI-2. | CSV: `DISCONNECT SENSOR/timeout` unos 1000 ms después de la última lectura y, al volver la red, `REGISTER SENSOR` y `REGISTER ACTUATOR`; el sistema vuelve a MEDIUM sin tocar ningún nodo.<br>Logs de OI-1 y OI-2: `SERVER_LOST wifi=down`, líneas `RF7 (c) WiFi requests` (cada 10 000 ± 300 ms) y `RNF1 restarts` (0) → `PASS`.<br>Los tres LEDs parpadean mientras no hay red. | | | |
+| A08 | RF7 (a), RF7 (b), RF7 (c) | 1. Blanco a 30 cm (MEDIUM).<br>2. Apagar el punto de acceso durante 40 s y volver a encenderlo.<br>3. Comprobar con `ipconfig` que la PC conserva la IP del evento `START`; si cambió, la repetición no cuenta.<br>4. Repetir una vez más.<br>5. Ejecutar `python -m tests.analyze_log` con el CSV y con los logs de OI-1 y OI-2. | CSV: `DISCONNECT SENSOR/timeout` unos 1000 ms después de la última lectura y, al volver la red, `REGISTER SENSOR` y `REGISTER ACTUATOR`; el sistema vuelve a MEDIUM sin tocar ningún nodo.<br>Logs de OI-1 y OI-2: `SERVER_LOST wifi=down`, líneas `RF7 (c) WiFi requests` (cada 10 000 ± 300 ms) y `RNF1 restarts` (0) → `PASS`.<br>Los tres LEDs parpadean mientras no hay red. | Los dos cortes se hicieron con el router doméstico; la PC conservó 192.168.1.32 por la reserva DHCP. En los dos cortes las dos placas registraron `SERVER_LOST wifi=down` (a 34.6 s y 200.8 s del `START`) y los tres LEDs parpadearon (RF7 (b)). `RF7 (c) WiFi requests` cada 9998–10002 ms en OI-1 y OI-2 → `PASS`. Pérdidas del sensor: `SENSOR/timeout` a 1004–1015 ms y `ACK 0` a 1046–1150 ms → `PASS` (RF7 (a)). Al volver la red, OI-1 se registró a 135.3 s y 281.6 s, OI-2 a 120.7 s y 291.0 s, y el sistema volvió a MEDIUM sin tocar ningún nodo. `RNF1 restarts: 0` en las dos placas.<br>Líneas `FAIL`: `RF7 (c) connection attempts` hasta 15944 ms (OI-1) y 16162 ms (OI-2), porque el script mide como un intervalo dos intentos separados por un `WIFI_RETRY` de una segunda caída mientras el router arrancaba; con WiFi los intentos fueron cada 1762–2000 ms. RNF1, RNF3 y RNF4 fallan por los cortes provocados.<br>Observación: a 150.0 s el servidor perdió a la vez todas sus conexiones con `wifi=up` en las placas (§4.4). | Aprobada con observación | [server_20261013_161536.csv](docs/evidencias/A08/server_20261013_161536.csv), [A08_OI1.log](docs/evidencias/A08/A08_OI1.log), [A08_OI2.log](docs/evidencias/A08/A08_OI2.log), [A08_analisis.txt](docs/evidencias/A08/A08_analisis.txt) |
 
 ### 4.3 B. Pruebas automáticas
 
@@ -1480,7 +1480,7 @@ Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_cont
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B02 | RF4 | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 4 de 4 casos de `ProtocolTest` `ok`. | 4 de 4 casos `ok`: registro y estado inicial, mensajes enviados antes del `OK`, los 16 mensajes inválidos de la Tabla 6 con su respuesta y el de 32 caracteres aceptado, y `ACK` sin comando pendiente. Resumen de la ejecución conjunta: `Ran 14 tests in 2.889s` y `OK`. | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
+| B02 | RF4 | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 4 de 4 casos de `ProtocolTest` `ok`. | 4 de 4 casos `ok`: registro y estado inicial, mensajes enviados antes del `OK`, los 16 mensajes inválidos de la Tabla 6 con su respuesta y el de 32 caracteres aceptado, y `ACK` sin comando pendiente. Resumen de la ejecución conjunta: `Ran 14 tests in 3.167s` y `OK`. | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
 
 #### B03. Algoritmo de control por TCP
 
@@ -1511,16 +1511,16 @@ El sensor simulado envía distancias exactas, imposibles de colocar con una regl
 | `test_sensor_closes` | El sensor cierra su conexión | El actuador recibe `SET 0 ALL BLINK` en ≤ 1.5 s (en la práctica, enseguida); CSV: `DISCONNECT SENSOR/closed` | RF7 (a) |
 | `test_sensor_connection_error` | La conexión del sensor se corta con un *reset*, como un cable o una red que falla | `SET 0 ALL BLINK` al actuador; CSV: `DISCONNECT SENSOR/error` | RF7 (a) |
 | `test_silent_sensor` | El sensor envía una lectura y sigue conectado sin enviar nada más | `SET 0 ALL BLINK` entre 1.0 y 1.5 s después de la última lectura (la salida informa el tiempo); CSV: `DISCONNECT SENSOR/timeout` | RF7 (a) |
-| `test_sensor_replaced` | Con el sistema en MEDIUM, se registra un segundo sensor y después se cierra el primero | Las lecturas del nuevo sensor cambian la zona; el cierre del sensor viejo no produce ERROR | RF7 (c), §2.5.3 (7) |
+| `test_sensor_replaced` | Con el sistema en MEDIUM, se registra un segundo sensor y después se cierra el primero | Las lecturas del nuevo sensor cambian la zona; un `POST` del sensor viejo recibe `ERROR NOT_REGISTERED` y no cambia la zona; el cierre del sensor viejo no produce ERROR | RF7 (c), §2.5.3 (7) |
 | `test_actuator_absent_and_back` | El actuador se desconecta, llega una lectura y se registra un actuador nuevo | CSV: `DISCONNECT ACTUATOR/closed` y `NO_ACTUATOR` con el `seq` de la lectura; el actuador nuevo recibe `SET 0 RED BLINK`, el estado vigente, y los comandos siguientes | RF7 (c), §2.5.6 |
-| `test_actuator_replaced` | Con el sistema en MEDIUM, se registra un segundo actuador | El nuevo recibe `SET 0 YELLOW BLINK` y los comandos siguientes; el viejo ya no recibe nada | RF7 (c), §2.5.3 (7) |
+| `test_actuator_replaced` | Con el sistema en MEDIUM, se registra un segundo actuador | El nuevo recibe `SET 0 YELLOW BLINK` y los comandos siguientes; el viejo ya no recibe nada, y un `ACK` del actuador viejo recibe `ERROR NOT_REGISTERED` | RF7 (c), §2.5.3 (7) |
 | `test_send_failure` | Un `SET` no se puede enviar porque el socket del actuador está cerrado | CSV: `SEND_FAILED`; el servidor da por perdido al actuador | §2.5.6 |
 
 Un envío fallido no se puede provocar a voluntad por la red: si el actuador cierra la conexión, el servidor lo detecta antes de intentar enviarle algo. Por eso `test_send_failure` ejecuta un `ControlServer` dentro del mismo proceso, con un socket ya cerrado como actuador y su log en una carpeta temporal.
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B04 | RF7 (a), RF7 (c) | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 7 de 7 casos de `DisconnectionTest` `ok`. | 7 de 7 casos `ok`. Tiempos medidos hasta que `SET 0 ALL BLINK` llegó al actuador: 2 ms cuando el sensor cierra la conexión y 1016 ms cuando el sensor queda en silencio, dentro de la ventana de 1.0 a 1.5 s de RF7 (a). | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
+| B04 | RF7 (a), RF7 (c) | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 7 de 7 casos de `DisconnectionTest` `ok`. | 7 de 7 casos `ok`. Tiempos medidos hasta que `SET 0 ALL BLINK` llegó al actuador: 5 ms cuando el sensor cierra la conexión y 1015 ms cuando el sensor queda en silencio, dentro de la ventana de 1.0 a 1.5 s de RF7 (a). | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
 
 #### B05. Firmware de OI-1 y OI-2 con un servidor de prueba
 
@@ -1573,7 +1573,10 @@ La corrida solo requiere dejar el sistema funcionando; el veredicto sale por com
 
 ### 4.4 Análisis de errores
 
-[PENDIENTE: completar después de ejecutar el plan. Por cada caso fallido o en el límite: valor medido frente al criterio, causa identificada con la evidencia (red, firmware, montaje o instrumento) y acción tomada o recomendada en §7.]
+- **A07, `seq` reinicia en 24.** En las tres reconexiones la primera lectura que llega al servidor tiene `seq 24` (`A07_analisis.txt`: `seq 24 ... ERROR -> NEAR`, 3 veces). OI-1 numera cada medición desde el arranque, una cada 100 ms, y las 24 tomadas mientras se conectaba no se pudieron enviar. No es una pérdida del servidor: el script las cuenta como reinicio de `seq` y no como lecturas perdidas (0 lost).
+- **A08, pérdida simultánea a 150.0 s.** El CSV muestra cuatro `DISCONNECT .../error` en 65 ms (149979.7 a 150044.5 ms): una conexión sin registrar, dos del actuador y una del sensor. En ese momento OI-1 registraba `SERVER_LOST wifi=up` y OI-2 no registró ningún `SERVER_LOST` hasta el segundo corte. Que todos los sockets fallen a la vez del lado de la PC, y que OI-2 no reciba un cierre, indica que la causa más probable fue una interrupción breve del adaptador WiFi de la PC (no de las placas ni del router). Los clientes volvieron a registrarse solos (281.6 s y 291.0 s, tras el segundo corte).
+- **A08, `ACK` de 1735.8 y 1768.5 ms.** Son 2 de los 5 cambios con `latency_ms` de A08, medidos en una sesión en la que la red se cortó y se restableció varias veces; los otros tres tardaron 59.3–130.7 ms. Se atribuyen a la red, no al servidor.
+- **Revisión del código, conexión reemplazada.** Durante la revisión final se detectó que una conexión reemplazada por un `REGISTER` más reciente podía seguir enviando lecturas que cambiaban la zona. Se corrigió con `_is_current()` en `tcp_server.py` y se repitieron B02 a B04, que ahora comprueban ese caso. Las pruebas físicas no se ven afectadas, porque en ellas las conexiones viejas ya no enviaban mensajes.
 
 - **A03, alcance real menor que el de la hoja de datos.** Con el límite en 400 cm, las lecturas fueron continuas solo hasta unos 190 cm; más lejos aparecieron cada vez más `NAN` y a 400 cm no llegó ninguna lectura válida. El eco de una pared lejana es débil, el haz del HC-SR04 se abre unos 15° y el piso y los objetos cercanos devuelven ecos que interfieren. La acción tomada fue reducir el límite superior del rango válido a 200 cm (`MAX_VALID_CM`), de modo que el sistema solo declara lo que el sensor mide de forma confiable; fuera de ese rango muestra ERROR.
 - **A03, error a distancias largas.** En la segunda ejecución, con el límite en 200 cm, todas las distancias dieron 10 lecturas válidas, pero el sensor midió de 5 a 6.5 cm menos que la regla en 150, 190 y 200 cm (143.5, 184.9 y 193.6 cm). Es la misma tendencia de A02: un error sistemático que crece con la distancia. Como el límite se aplica a la lectura, un objeto a 200 cm reales todavía se muestra en FAR; la calibración recomendada en §7 reduciría esta diferencia.
@@ -1584,7 +1587,7 @@ La corrida solo requiere dejar el sistema funcionando; el veredicto sale por com
 - **A06, corte de la red WiFi.** En la tercera desconexión de ECHO, las lecturas de OI-1 empezaron a llegar en ráfagas (4 en 2 ms tras 300 ms sin nada, seq 389–392) y después dejaron de llegar: el servidor recibió la última (seq 395) a los 24.1 s y cerró la conexión 1015 ms después por silencio, como manda RF7 (a). Según el log de OI-1, la placa siguió enviando las lecturas 396 a 403, que no llegaron; su `loop()` se detuvo 1.66 s dentro de `write()`, con el buffer de envío lleno, hasta recibir `Connection reset by peer`. Al mismo tiempo, el `ACK` de OI-2 al `SET` 377 tardó 5674.4 ms, aunque OI-2 no se tocó durante la prueba. Que las dos placas se retrasaran a la vez, con `wifi=up` en OI-1, indica que el corte fue de la red (punto de acceso o adaptador WiFi de la PC) y no del cable ECHO ni del firmware. El sistema reaccionó como está diseñado: ERROR mientras faltó el sensor, reconexión automática y vuelta a MEDIUM. La acción recomendada está en §7.
 - **B07, retardos aislados de la red.** En 12 min de funcionamiento continuo no hubo desconexiones ni lecturas perdidas, pero sí retrasos puntuales: 7 intervalos entre lecturas de más de 500 ms (máximo 926.9 ms) y un `ACK` de 1295.9 ms (seq 2859), frente a una mediana de 29.8 ms en los demás cambios. Es el mismo comportamiento de A04 y A06, más leve: la red WiFi retiene paquetes durante cientos de milisegundos y los entrega juntos. Para RNF1 el margen es pequeño (926.9 ms frente a 1000 ms), y un `ACK` así excede el límite de RNF3 en ese cambio, aunque en A05 los 42 cambios medidos quedaron por debajo de 241 ms. La acción recomendada es la misma de §7 (red WiFi estable).
 
-Fuentes de error conocidas, para orientar el análisis:
+Fuentes de error consideradas:
 
 - **Exactitud y límites (A02 y A03):** un blanco pequeño o inclinado, que produce ecos laterales o la pérdida del eco; el piso o los objetos cercanos, que a distancias largas devuelven ecos antes que la pared, porque el haz del HC-SR04 se abre unos 15°; la referencia de la regla mal ubicada respecto al frente de los transductores.
 - **Tiempos (A05, A07, A08, B05 y B06):** la latencia de la red WiFi, donde cada mensaje cruza el aire dos veces (§2.1); la espera de 0 a 100 ms hasta la siguiente medición.
@@ -1592,20 +1595,88 @@ Fuentes de error conocidas, para orientar el análisis:
 
 ## 5. Resultados
 
-[PENDIENTE: tabla consolidada con los resultados medidos (valor, unidad, tipo de evidencia y veredicto), gráficos generados a partir de los logs y análisis crítico.]
+### 5.1 Resultados consolidados
+
+**Tabla 11.** Valores medidos frente a los declarados en §1.5 y §1.6. Tipo de evidencia: *física* (medición con cinta, LEDs o video), *log* (CSV del servidor o monitor serie analizados con `analyze_log.py`) o *automática* (`unittest` o `system_check.py`).
+
+| Requisito | Valor declarado | Valor medido | Prueba y evidencia | Tipo de evidencia | Veredicto |
+|---|---|---|---|---|---|
+| RF1 | Medir la distancia y enviarla con un decimal o `NAN` | 70 lecturas en 7 puntos; 0 lecturas sin formato (`RF1 format` → PASS) | A02, A03 ([A02](docs/evidencias/A02/), [A03](docs/evidencias/A03/)) | Física y log | Cumple |
+| RF2 | Tres rangos con umbrales 20 y 40 cm | 0 zonas distintas del algoritmo | B03, B07 ([B07_analisis.txt](docs/evidencias/B07/B07_analisis.txt)) | Automática y log | Cumple |
+| RF3 | Rojo, amarillo y blanco según el rango | LED correcto en cada rango | A01, B05 ([A01](docs/evidencias/A01/), [B05](docs/evidencias/B05/)) | Física | Cumple |
+| RF4 | TCP sobre WiFi con protocolo propio | B02 4 de 4; 0 `PROTOCOL_ERROR`, 0 `SET` sin `ACK` en B07 | B02, B07 ([B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt)) | Automática y log | Cumple |
+| RF5 | Histéresis de 2 cm | 0 `SET` con el blanco quieto 55.5 s en 20 cm y 49.1 s en 40 cm; cruces en 22.3, 17.9, 42.1 y 37.8 cm | A04 ([A04](docs/evidencias/A04/)) | Física y log | Cumple |
+| RF6 | ERROR tras 3 lecturas inválidas seguidas | ERROR en la 3.ª `NAN`, 199–200 ms después de la primera, 3 de 3 | A06 ([A06_salida.txt](docs/evidencias/A06/A06_salida.txt)) | Física y log | Cumple |
+| RF7 (a) | ERROR entre 1.0 y 1.5 s sin lecturas | `SENSOR/timeout` a 1004–1015 ms; `ACK 0` a 1033–1187 ms (A07, A08); B04: 1015 ms | A07, A08, B04 | Log y automática | Cumple |
+| RF7 (b), (c) | LEDs de ERROR sin servidor o sin red; reconexión sin intervención | Pedidos de red cada 9998–10002 ms; vuelta a MEDIUM sin tocar nodos | A08, B05 ([A08_analisis.txt](docs/evidencias/A08/A08_analisis.txt)) | Física y log | Cumple |
+| RNF1 | ≥ 10 min, 0 reinicios, ningún intervalo > 1000 ms | 12.0 min; 7202 lecturas; 0 perdidas, 0 inválidas, 0 reinicios de `seq`, 0 desconexiones; intervalo medio 100.0 ms, p95 118.8 ms, máx. 926.9 ms | B07 ([B07_analisis.txt](docs/evidencias/B07/B07_analisis.txt)) | Log | Cumple (margen 73 ms) |
+| RNF2 | Error individual ≤ 3 cm entre 5 y 100 cm | Error individual máx. 2.6 cm (100 cm); error del promedio máx. 2.44 cm; dispersión ≤ 1.0 cm; 70 lecturas en 7 puntos | A02 (Tabla 3) | Física y log | Cumple, con error sistemático creciente |
+| RNF3 | Respuesta ≤ 1000 ms (100 ms + `latency_ms`) | A05: 42 cambios, `latency_ms` 8.9–140.8 ms, peor respuesta 240.8 ms. B07: 6 de 7 cambios en 14.0–31.6 ms y 1 de 1295.9 ms. Red degradada: A04 3625.6 ms, A06 5674.4 ms, A08 1735.8 y 1768.5 ms | A05, B07, A04, A06, A08 | Log | Cumple en condiciones normales de red (48 de 49 cambios en A05 y B07); **no cumple** en 5 cambios ocurridos durante retrasos o cortes de la red WiFi |
+| RNF4 | ≥ 5 lecturas/s | 97–102 lecturas por ventana de 10 s, media 100.0 (10.0 lecturas/s) en B07; 10.2 lecturas/s en B05-B | B07, B05 | Log | Cumple (2× el mínimo) |
+| RNF5 | ≤ 3 s de `START` a `REGISTER` | Sensor/actuador en ms: B06 arranque inicial 1479/502; reinicio 1 1647/1654; reinicio 2 897/922; B07 228/1778; A07 1270/1682; A08 98/1927. Máx. 1927 ms | B06, B07, A07, A08 ([B06_analisis.txt](docs/evidencias/B06/B06_analisis.txt)) | Log | Cumple |
+| Pruebas de software | Todas `ok` | B01 17 de 17; B02–B04 14 de 14; B05 8 de 8 pasos | B01–B05 | Automática | Cumple |
+
+**Figura 12.** Error de la distancia frente a la distancia de referencia (A02).
+
+```mermaid
+xychart-beta
+    title "A02: error frente a la distancia"
+    x-axis "Distancia de referencia (cm)" [5, 10, 20, 30, 40, 60, 100]
+    y-axis "Error (cm)" 0 --> 3
+    bar [0.5, 0.2, 0.6, 0.0, 1.4, 2.1, 2.6]
+    line [0.42, 0.19, 0.49, 0.00, 1.31, 2.04, 2.44]
+```
+
+Barras: error máximo individual; línea: error del promedio. Datos de la Tabla 3, salida de `analyze_log.py` sobre [server_20261013_122713.csv](docs/evidencias/A02/server_20261013_122713.csv) (5 a 60 cm) y [server_20261013_123746.csv](docs/evidencias/A02/server_20261013_123746.csv) (100 cm). El límite de RNF2 es 3.0 cm.
+
+**Figura 13.** Peor `latency_ms` de cada prueba con cambios de zona.
+
+```mermaid
+xychart-beta
+    title "latency_ms máxima por prueba (ms)"
+    x-axis ["A05", "B07", "A08", "A04", "A06"]
+    y-axis "latency_ms (ms)" 0 --> 6000
+    bar [140.8, 1295.9, 1768.5, 3625.6, 5674.4]
+```
+
+Datos de [A05_salida.txt](docs/evidencias/A05/A05_salida.txt), [B07_analisis.txt](docs/evidencias/B07/B07_analisis.txt), [A08_analisis.txt](docs/evidencias/A08/A08_analisis.txt) y de las filas A04 y A06 de §4.2. El límite de RNF3 para `latency_ms` es 900 ms (1000 − 100).
+
+### 5.2 Análisis crítico
+
+Lo que los datos permiten afirmar:
+
+- **Exactitud.** El error individual no supera 2.6 cm entre 5 y 100 cm (A02). El error es sistemático y negativo: el promedio queda por debajo de la referencia desde 40 cm y la diferencia crece con la distancia (1.31, 2.04 y 2.44 cm a 40, 60 y 100 cm), mientras la dispersión se mantiene ≤ 1.0 cm. Es un error de escala, corregible con calibración (§7).
+- **Latencia.** En red normal la latencia de los cambios de zona es de decenas de ms (A05: 8.9–140.8 ms; B07: 6 de 7 entre 14.0 y 31.6 ms). Los valores atípicos (1295.9 a 5674.4 ms) coinciden con retrasos o cortes de la red documentados en §4.2 y §4.4, por lo que el factor dominante es la red WiFi y no el firmware ni el servidor.
+- **Estabilidad.** 12.0 min sin reinicios ni desconexiones, con 0 lecturas perdidas (B07).
+
+Lo que los datos no permiten afirmar:
+
+- La exactitud fuera de 5–100 cm: entre 100 y 200 cm solo se comprobó que la lectura existe (A03), no su error.
+- Un margen amplio en RNF1: el intervalo máximo fue 926.9 ms frente a 1000 ms, solo 73 ms de margen en una sola corrida.
+- El tiempo de respuesta físico completo: el término de 100 ms de RNF3 es una cota calculada (periodo de muestreo), no medida; la latencia medida va del `POST` al `ACK` con el reloj del servidor.
+- La generalidad de los resultados: todas las pruebas se hicieron en una sola red y una sola sesión, el 13/10/2026.
 
 ## 6. Conclusiones
 
-[PENDIENTE: conclusiones respaldadas por los resultados de §5.]
+1. **Integración TCP/IP.** El sistema cumple RF1 a RF4: OI-1 envía 10.0 lecturas/s por TCP sobre WiFi, el servidor clasifica con 0 zonas distintas del algoritmo y OI-2 enciende el LED correcto, con un protocolo propio de líneas de texto validado por B02 (4 de 4) y sin `PROTOCOL_ERROR` en los 12.0 min de B07 (§5.1).
+2. **Arquitectura.** Poner la lógica en el servidor y llevar el `seq` de extremo a extremo (`POST` → `SET` → `ACK`) permitió medir la latencia de cada cambio con un solo reloj, sin sincronizar las placas: 42 cambios en A05 con `latency_ms` de 8.9 a 140.8 ms.
+3. **Robustez.** En todos los escenarios probados el sistema pasó a ERROR y se recuperó sin intervención: `ACK 0` entre 1033 y 1187 ms tras perder el sensor (A07, A08), registro de los dos clientes como máximo 1927 ms después de reiniciar el servidor (RNF5) y 0 reinicios de placas en los dos cortes de WiFi de A08.
+4. **La red domina el tiempo de respuesta.** RNF3 se cumple solo en red normal (48 de 49 cambios en A05 y B07); los 5 cambios que lo superan (1735.8 a 5674.4 ms) ocurrieron durante retrasos o cortes de la red WiFi, no por el procesamiento.
+5. **Exactitud.** El HC-SR04 cumple RNF2 con un error máximo de 2.6 cm, pero con un error sistemático negativo que crece con la distancia (2.44 cm en el promedio a 100 cm), señal de un factor de escala corregible.
+6. **Histéresis.** La banda de 2 cm evitó todo parpadeo de zona: 0 `SET` con el blanco quieto 55.5 s en el umbral de 20 cm y 49.1 s en el de 40 cm, mientras los cruces reales cambiaron la zona en 22.3, 17.9, 42.1 y 37.8 cm (A04).
+7. **Lo aprendido sobre TCP.** TCP entrega un flujo de bytes, no mensajes, por lo que hizo falta un *framing* con `\n` (B02 prueba dos mensajes en un mismo segmento); el ACK de transporte no confirma que el actuador ejecutó la orden, por eso el protocolo tiene su propio `ACK <seq>`; y desactivar Nagle evitó que los mensajes cortos esperaran a agruparse.
 
 ## 7. Recomendaciones
-
-[PENDIENTE: recomendaciones ligadas a los hallazgos de las pruebas.]
 
 - **Alcance mayor (A03).** Para indicar distancias de más de 2 m haría falta un sensor de mayor alcance o un blanco de mayor superficie; con el HC-SR04 y este montaje, el límite confiable es 200 cm.
 - **Calibrar la distancia (A02).** Medir dos o tres distancias de referencia, calcular el factor entre la distancia real y la medida, y ajustar `SensorConfig::CM_PER_ECHO_US` con ese factor. Así se elimina el error sistemático que crece con la distancia y se gana margen frente al límite de 3 cm de RNF2.
 - **Descartar lecturas sueltas (A04).** Clasificar con la mediana de las 3 últimas lecturas válidas en lugar de la última: una lectura aislada, como las de 27.5 y 24.6 cm del primer intento de A04-B, no cambiaría la zona. El costo es hasta 200 ms más de respuesta, dentro del margen de RNF3.
 - **Red WiFi estable (A04, A06 y B07).** Ubicar el punto de acceso cerca de los ESP32, usar un canal poco congestionado y desactivar el ahorro de energía del adaptador WiFi de la PC, para evitar retardos como el `ACK` de 3625.6 ms de A04-B, el corte de unos 6 s de A06 y el `ACK` de 1295.9 ms de B07. Una red dedicada para el sistema, sin otros dispositivos, reduce además la congestión.
+
+- **Supervisión de la conexión (A06 y A08).** Agregar un mensaje periódico (*heartbeat*) entre el servidor y los clientes, y activar TCP keepalive en los sockets, para detectar un servidor que desaparece sin cerrar la conexión. En A08, a 150.0 s, el servidor perdió todas sus conexiones y OI-2 no registró ningún `SERVER_LOST` (§4.4).
+- **Envío no bloqueante en `TcpLink::send()` (A06).** Comprobar el espacio libre del buffer antes de escribir o usar un buffer acotado que descarte lecturas viejas, para que `loop()` no se detenga como en los 1.66 s de A06 (§3.7).
+- **Verificar RNF3 físicamente.** Filmar el blanco y los LEDs a 60 fps y contar cuadros entre el cruce del umbral y el cambio de LED, para medir el término de 100 ms que hoy es una cota calculada (§5.2).
+- **Red dedicada para las pruebas (A04, A06, A08 y B07).** Repetir A05 y B07 en una red sin otros dispositivos, para separar la latencia de la red de la del sistema: los 5 cambios fuera de RNF3 ocurrieron con la red degradada (§5.1).
 
 Limitaciones conocidas del diseño y cómo resolverlas:
 
@@ -1616,10 +1687,26 @@ Limitaciones conocidas del diseño y cómo resolverlas:
 
 ## 8. Anexos
 
-| Anexo | Archivo | Qué demuestra | Prueba relacionada |
-|---|---|---|---|
-| A1 | [docs/img/circuito_oi1_sensor.svg](docs/img/circuito_oi1_sensor.svg) | Esquema eléctrico de OI-1, con el divisor de tensión de ECHO | — |
-| A2 | [docs/img/circuito_oi2_actuador.svg](docs/img/circuito_oi2_actuador.svg) | Esquema eléctrico de OI-2, con las resistencias de los LEDs | — |
-| A3 | Bloques `mermaid` de este informe | Fuentes editables de los diagramas de arquitectura, clases, secuencia y estados | — |
+Evidencias de las pruebas, una carpeta por prueba en [docs/evidencias/](docs/evidencias/); cada carpeta tiene un README con el detalle de sus archivos.
 
-[PENDIENTE: fotos del montaje de OI-1 y OI-2; videos de A01, A05 y B05; carpeta `docs/evidencias/` con el CSV del servidor, los logs de OI-1 y OI-2 y la salida de los scripts de cada prueba.]
+| Carpeta | Prueba | Archivos principales | Qué demuestra |
+|---|---|---|---|
+| [A01](docs/evidencias/A01/) | Funcionamiento de punta a punta | 9 videos, 2 capturas, 4 CSV | Arranque en ERROR, LED correcto en cada rango y reconexión |
+| [A02](docs/evidencias/A02/) | Exactitud | 7 fotos de la cinta, 2 CSV | Error ≤ 2.6 cm entre 5 y 100 cm (RNF2) |
+| [A03](docs/evidencias/A03/) | Límites del rango | 5 videos, 2 CSV | Lecturas en 2 y 200 cm y `NAN` fuera del rango |
+| [A04](docs/evidencias/A04/) | Histéresis | 4 videos, 5 CSV | 0 `SET` con el blanco quieto en los umbrales (RF5) |
+| [A05](docs/evidencias/A05/) | Tiempo de respuesta | 2 videos, 2 CSV, `A05_salida.txt` | 42 cambios con `latency_ms` 8.9–140.8 ms (RNF3) |
+| [A06](docs/evidencias/A06/) | Lecturas inválidas | `A06.mp4`, `A06_OI1.log`, `A06_salida.txt` | ERROR en la 3.ª `NAN` (RF6) |
+| [A07](docs/evidencias/A07/) | Pérdida del sensor | `A07.mp4`, CSV, `A07_analisis.txt` | `ACK 0` a 1033–1187 ms y reconexión (RF7 (a)) |
+| [A08](docs/evidencias/A08/) | Caída de la red WiFi | CSV, 2 logs, `A08_analisis.txt` | Falla segura y reconexión tras dos cortes (RF7) |
+| [B01](docs/evidencias/B01/) | Pruebas unitarias | `B01_salida.txt` | 17 de 17 `ok` |
+| [B02-B04](docs/evidencias/B02-B04/) | Pruebas de sistema del servidor | `B02-B04_salida.txt`, CSV | 14 de 14 `ok` |
+| [B05](docs/evidencias/B05/) | Firmware con servidor simulado | `B05-A.mp4`, 2 logs, 2 salidas, 2 análisis | 8 de 8 pasos; reintentos cada 1770–2000 ms |
+| [B06](docs/evidencias/B06/) | Reinicio del servidor | `B06.mp4`, 3 CSV, 2 logs, `B06_analisis.txt` | Registro en ≤ 1654 ms tras cada arranque (RNF5) |
+| [B07](docs/evidencias/B07/) | Estabilidad de 12 min | CSV, 2 logs, `B07_analisis.txt` | 0 reinicios, intervalo máx. 926.9 ms (RNF1, RNF4) |
+
+| Anexo | Archivo | Qué demuestra |
+|---|---|---|
+| Esquema de OI-1 | [docs/img/circuito_oi1_sensor.svg](docs/img/circuito_oi1_sensor.svg) | Circuito eléctrico de OI-1, con el divisor de tensión de ECHO |
+| Esquema de OI-2 | [docs/img/circuito_oi2_actuador.svg](docs/img/circuito_oi2_actuador.svg) | Circuito eléctrico de OI-2, con las resistencias de los LEDs |
+| Diagramas | Bloques `mermaid` de este informe | Fuentes editables de los diagramas de arquitectura, clases, secuencia, estados y de las Figuras 12 y 13 |

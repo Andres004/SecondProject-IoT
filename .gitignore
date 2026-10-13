@@ -25,3 +25,5 @@ server/logs/
 .cursor/
 .DS_Store
 Thumbs.db
+
+logs/
