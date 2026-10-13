@@ -1,0 +1,32 @@
+
+== server_20261013_153535.csv (720.5 s, 7225 events)
+Readings: 7202 received over 12.0 min, 0 invalid, 0 lost, 0 seq restarts
+RF1 format: 0 readings without one decimal or NAN -> PASS
+RNF4 readings per 10 s window: min 97, mean 100.0, max 102 -> PASS
+RNF1 time between readings: mean 100.0 ms, p95 118.8 ms, max 926.9 ms; 0 disconnections -> PASS
+RF2/RF5/RF6 control: 0 zones different from the algorithm, 8 zone changes, 0 without command, 0 extra commands -> PASS
+     seq 439 28.0: ERROR -> MEDIUM
+     seq 1654 17.8: MEDIUM -> NEAR
+     seq 2850 22.9: NEAR -> MEDIUM
+     seq 2859 42.1: MEDIUM -> FAR
+     seq 4074 37.3: FAR -> MEDIUM
+     seq 5262 17.5: MEDIUM -> NEAR
+     seq 6446 22.6: NEAR -> MEDIUM
+     seq 6453 42.4: MEDIUM -> FAR
+RNF3 latency_ms of 7 zone changes: min 14.0, median 29.8, p95 1295.9, max 1295.9; worst response 100 + 1295.9 = 1395.9 ms -> FAIL
+     each change: 20.0, 24.7, 1295.9, 31.6, 29.8, 29.9, 14.0
+RNF5 after a server restart: REGISTER SENSOR 228 ms after START -> PASS
+RNF5 after a server restart: REGISTER ACTUATOR 1778 ms after START -> PASS
+RF4 protocol: 0 PROTOCOL_ERROR, 0 SET without ACK, 0 ACK without SET -> PASS
+
+== B07_OI1.log (7708 events)
+Events: BOOT 1, SERVER_CONNECTED 1, SERVER_LOST 1, SERVER_UNREACHABLE 25, WIFI_RETRY 0, TX_FAILED 474, RX_TOO_LONG 0
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1850 to 2001 ms (24 intervals) -> PASS
+
+== B07_OI2.log (46 events)
+Events: BOOT 1, SERVER_CONNECTED 1, SERVER_LOST 1, SERVER_UNREACHABLE 24, WIFI_RETRY 0, TX_FAILED 0, RX_TOO_LONG 0
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1758 to 2000 ms (23 intervals) -> PASS
