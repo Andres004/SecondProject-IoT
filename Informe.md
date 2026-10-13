@@ -72,7 +72,7 @@ El algoritmo de control se ejecuta en el servidor ([zone_controller.py](server/z
 | FAR (lejos) | 40.0 ≤ d ≤ 400.0 | `WHITE ON` | LED blanco encendido fijo |
 | ERROR | Tercera lectura inválida seguida; sensor desconectado o 1.0 s sin lecturas; estado inicial, antes de la primera lectura | `ALL BLINK` | Los tres LEDs parpadeando juntos a 2 Hz |
 
-- **Límites.** 2.0 cm pertenece a NEAR; 20.0 cm, a MEDIUM; 40.0 cm y 400.0 cm, a FAR. 1.9 cm y 400.1 cm son inválidas. Las pruebas unitarias de [test_zone_controller.py](server/test_zone_controller.py) usan exactamente esos valores.
+- **Límites.** 2.0 cm pertenece a NEAR; 20.0 cm, a MEDIUM; 40.0 cm y 400.0 cm, a FAR. 1.9 cm y 400.1 cm son inválidas. Las pruebas unitarias de [test_zone_controller.py](server/tests/test_zone_controller.py) usan exactamente esos valores.
 - **Sin redondeo.** El servidor compara el número recibido tal como llega. OI-1 lo envía con un decimal, una resolución de 0.1 cm, más fina que la exactitud del sensor.
 - **Contigüidad y no solapamiento.** Sean V = [2.0, 400.0] el rango válido, NEAR = [2.0, 20.0), MEDIUM = [20.0, 40.0) y FAR = [40.0, 400.0]:
   - NEAR ∪ MEDIUM ∪ FAR = [2.0, 400.0] = V, porque cada intervalo empieza donde termina el anterior.
@@ -125,7 +125,7 @@ stateDiagram-v2
 | ID | Atributo | Valor declarado | Método de verificación | Prueba |
 |---|---|---|---|---|
 | RNF1 | Estabilidad | Operación continua de los tres nodos durante ≥ 10 min, con 0 reinicios (ningún `BOOT` nuevo en OI-1 ni en OI-2 y ningún reinicio de `seq`) y 0 bloqueos (ningún intervalo de 1 s o más entre dos lecturas recibidas por el servidor). Si ocurre una desconexión, se recupera sola (RNF5). | Corrida de al menos 10 min. Del CSV del servidor se obtienen los reinicios (`seq` que vuelve atrás), las desconexiones, las lecturas perdidas e inválidas y el intervalo máximo entre lecturas; en los logs de OI-1 y OI-2 se buscan `BOOT` nuevos. | B07 |
-| RNF2 | Exactitud | Error absoluto de cada lectura individual ≤ 3 cm respecto a una cinta métrica, en el rango de trabajo de 5 a 100 cm. | Al menos 10 lecturas por punto de referencia, en puntos repartidos entre 5 y 100 cm que incluyen ambos extremos y las fronteras de 20 y 40 cm. Se informan mínimo, máximo, promedio, error máximo individual y error del promedio. | A02 |
+| RNF2 | Exactitud | Error absoluto de cada lectura individual ≤ 3 cm respecto a una regla, en el rango de trabajo de 5 a 100 cm. | Al menos 10 lecturas por punto de referencia, en puntos repartidos entre 5 y 100 cm que incluyen ambos extremos y las fronteras de 20 y 40 cm. Se informan mínimo, máximo, promedio, error máximo individual y error del promedio. | A02 |
 | RNF3 | Tiempo de respuesta extremo a extremo | ≤ 1 s en el peor caso medido, desde que el objeto cruza el umbral de transición hasta que OI-2 muestra el nuevo estado. | En al menos 10 cambios de zona: 100 ms + `latency_ms` del CSV del servidor. Cinco de esos cambios se miden también con video. | A05 |
 | RNF4 | Frecuencia de muestreo | ≥ 5 lecturas/s enviadas por OI-1 y recibidas por el servidor. El diseño es de 10 lecturas/s. | Conteo de eventos `POST` del CSV del servidor en cada ventana de 10 s de la corrida de 10 min. Como `seq` aumenta de uno en uno, los saltos de `seq` muestran las lecturas enviadas que no llegaron. | B07 |
 | RNF5 | Tiempo de reconexión | ≤ 3 s desde que el servidor vuelve a escuchar hasta que cada cliente queda registrado. | Reloj del servidor: t(`REGISTER`) − t(`START`) en al menos 3 reinicios del servidor. | B06 |
@@ -842,11 +842,12 @@ SecondProject-IoT/
 │   ├── config.py
 │   ├── zone_controller.py
 │   ├── tcp_server.py
-│   ├── test_zone_controller.py
 │   ├── sensor_simulator.py
-│   ├── system_check.py
-│   ├── client_check.py
-│   └── analyze_log.py
+│   └── tests/                Pruebas y herramientas de prueba; se ejecutan desde server/ con -m
+│       ├── test_zone_controller.py
+│       ├── system_check.py
+│       ├── client_check.py
+│       └── analyze_log.py
 └── docs/
     ├── img/                  Esquemas eléctricos de OI-1 y OI-2 (SVG)
     └── evidencias/           Evidencia de cada prueba de §4 (CSV, logs, salidas y videos)
@@ -870,11 +871,11 @@ Un solo proyecto de PlatformIO contiene los dos firmwares: la sección `[env]` c
 | Servidor | [config.py](server/config.py) | Módulo `config` | Todas las constantes del servidor y del simulador |
 | Servidor | [zone_controller.py](server/zone_controller.py) | `Zone`, `ZoneController`, `classify()`, `is_valid()` | Algoritmo de control, sin código de red |
 | Servidor | [tcp_server.py](server/tcp_server.py) | `ControlServer`, `EventLog`, `local_ip()` | Servidor TCP, validación del protocolo, envío de comandos y log CSV |
-| Servidor | [test_zone_controller.py](server/test_zone_controller.py) | 4 clases de prueba con 17 casos | Pruebas unitarias del algoritmo de control |
+| Servidor | [test_zone_controller.py](server/tests/test_zone_controller.py) | 4 clases de prueba con 17 casos | Pruebas unitarias del algoritmo de control |
 | Herramienta | [sensor_simulator.py](server/sensor_simulator.py) | Script | Sensor simulado que envía distancias exactas para probar las fronteras |
-| Herramienta | [system_check.py](server/system_check.py) | `Connection`, `ProtocolTest`, `ControlTest`, `DisconnectionTest` | Pruebas de sistema: un sensor y un actuador simulados comprueban por TCP cada respuesta del servidor |
-| Herramienta | [client_check.py](server/client_check.py) | `ActuatorCheck`, `SensorCheck` | Servidor de prueba que comprueba cómo responde el firmware de cada ESP32 |
-| Herramienta | [analyze_log.py](server/analyze_log.py) | Script | Calcula los valores medidos de los requerimientos a partir del CSV del servidor y de los logs de los ESP32 |
+| Herramienta | [system_check.py](server/tests/system_check.py) | `Connection`, `ProtocolTest`, `ControlTest`, `DisconnectionTest` | Pruebas de sistema: un sensor y un actuador simulados comprueban por TCP cada respuesta del servidor |
+| Herramienta | [client_check.py](server/tests/client_check.py) | `ActuatorCheck`, `SensorCheck` | Servidor de prueba que comprueba cómo responde el firmware de cada ESP32 |
+| Herramienta | [analyze_log.py](server/tests/analyze_log.py) | Script | Calcula los valores medidos de los requerimientos a partir del CSV del servidor y de los logs de los ESP32 |
 
 `main.cpp` y `tcp_server.main()` solo coordinan: crean los objetos y llaman a sus métodos. La lógica de cada responsabilidad está en su propia clase.
 
@@ -902,10 +903,10 @@ python -m unittest -v              # pruebas unitarias del algoritmo de control
 python tcp_server.py               # inicia el servidor; Ctrl+C lo detiene
 python sensor_simulator.py         # opcional: sensor simulado con el escenario de fronteras
 python sensor_simulator.py 10.0 25.0 NAN   # opcional: valores propios, en orden
-python system_check.py             # pruebas de sistema con sensor y actuador simulados (servidor en marcha)
-python client_check.py ActuatorCheck   # servidor de prueba para OI-2 (servidor real detenido)
-python client_check.py SensorCheck     # servidor de prueba para OI-1 (servidor real detenido)
-python analyze_log.py              # mide los requerimientos con el CSV más reciente
+python -m tests.system_check                 # pruebas de sistema con sensor y actuador simulados (servidor en marcha)
+python -m tests.client_check ActuatorCheck   # servidor de prueba para OI-2 (servidor real detenido)
+python -m tests.client_check SensorCheck     # servidor de prueba para OI-1 (servidor real detenido)
+python -m tests.analyze_log                  # mide los requerimientos con el CSV más reciente
 ```
 
 Firmwares, desde la raíz del proyecto:
@@ -1249,7 +1250,7 @@ Uso de los logs en las mediciones:
 | RNF4 Frecuencia | Eventos `POST` del CSV por ventana de 10 s |
 | RNF5 Reconexión | Diferencia entre `START` y cada `REGISTER` en el CSV |
 
-[analyze_log.py](server/analyze_log.py) calcula todos estos valores a partir del CSV y de los logs de los ESP32 (§4).
+[analyze_log.py](server/tests/analyze_log.py) calcula todos estos valores a partir del CSV y de los logs de los ESP32 (§4).
 
 ### 3.9 Buenas prácticas aplicadas
 
@@ -1274,8 +1275,8 @@ Cada requerimiento de §1 está implementado en los archivos que indica la matri
 
 El plan verifica cada requerimiento de §1 con al menos una prueba, según la matriz de §1.6. Cada criterio de éxito sale de un valor declarado en §1 o de una constante del código, así el veredicto no depende de una apreciación subjetiva. Las pruebas se dividen en dos categorías, según cómo se obtiene el veredicto:
 
-- **A. Físicas y de entorno (manuales).** Requieren actuar sobre el montaje o sobre la red: colocar un objeto a una distancia medida con cinta métrica, desconectar un cable o una fuente, apagar el punto de acceso o grabar video. Los tiempos y las distancias se calculan a partir de los logs con [analyze_log.py](server/analyze_log.py); el video registra lo que se ve en los LEDs.
-- **B. Sistema y logs (automáticas).** El veredicto se obtiene solo con software: las pruebas unitarias, las pruebas de sistema con un sensor y un actuador simulados ([system_check.py](server/system_check.py)), el servidor de prueba que verifica el firmware de los ESP32 ([client_check.py](server/client_check.py)) y el análisis de los logs con [analyze_log.py](server/analyze_log.py). Incluyen las desconexiones que se pueden provocar desde la computadora: un cliente que cierra la conexión, que la corta, que deja de enviar, que es reemplazado o que no está, y un servidor que se detiene.
+- **A. Físicas y de entorno (manuales).** Requieren actuar sobre el montaje o sobre la red: colocar un objeto a una distancia medida con regla, desconectar un cable o una fuente, apagar el punto de acceso o grabar video. Los tiempos y las distancias se calculan a partir de los logs con [analyze_log.py](server/tests/analyze_log.py); el video registra lo que se ve en los LEDs.
+- **B. Sistema y logs (automáticas).** El veredicto se obtiene solo con software: las pruebas unitarias, las pruebas de sistema con un sensor y un actuador simulados ([system_check.py](server/tests/system_check.py)), el servidor de prueba que verifica el firmware de los ESP32 ([client_check.py](server/tests/client_check.py)) y el análisis de los logs con [analyze_log.py](server/tests/analyze_log.py). Incluyen las desconexiones que se pueden provocar desde la computadora: un cliente que cierra la conexión, que la corta, que deja de enviar, que es reemplazado o que no está, y un servidor que se detiene.
 
 El identificador indica la categoría: A01 a A08 son pruebas físicas (§4.2) y B01 a B07, automáticas (§4.3).
 
@@ -1308,16 +1309,16 @@ El identificador indica la categoría: A01 a A08 son pruebas físicas (§4.2) y 
 
 **Orden de ejecución.** Primero B01 a B05, que no necesitan el sistema completo; después las físicas A01 a A08, en orden: las que miden con el sistema funcionando normalmente (A01 a A05) van antes que las que provocan fallas (A06 a A08); al final B06 y B07, con todo lo demás ya validado. En total, unas 2 horas.
 
-**Herramientas.** Los tres scripts están en `server/` y solo usan la biblioteca estándar de Python.
+**Herramientas.** Los tres scripts están en `server/tests/`, se ejecutan desde `server/` con `python -m tests.<script>` y solo usan la biblioteca estándar de Python.
 
 | Herramienta | Qué hace | Pruebas |
 |---|---|---|
-| `python -m unittest -v` | Ejecuta las 17 pruebas unitarias de [test_zone_controller.py](server/test_zone_controller.py) | B01 |
-| [system_check.py](server/system_check.py) | Se conecta al servidor real como un OI-1 y un OI-2 simulados, envía los mensajes de cada caso, compara cada respuesta con la esperada y revisa los eventos del CSV | B02, B03, B04 |
-| [client_check.py](server/client_check.py) | Reemplaza al servidor: espera a un ESP32 real, le envía comandos y líneas inválidas, lo desconecta y comprueba cada respuesta del firmware | B05 |
-| [analyze_log.py](server/analyze_log.py) | Lee el CSV del servidor o el log de un ESP32 y calcula cada valor medible: formato y frecuencia de las lecturas, zonas y comandos frente al algoritmo, latencias, falla segura, reconexión, reintentos, reinicios, protocolo y exactitud. Sin argumentos analiza el CSV más reciente | A01 a A08, B05 a B07 |
+| `python -m unittest -v` | Ejecuta las 17 pruebas unitarias de [test_zone_controller.py](server/tests/test_zone_controller.py) | B01 |
+| [system_check.py](server/tests/system_check.py) | Se conecta al servidor real como un OI-1 y un OI-2 simulados, envía los mensajes de cada caso, compara cada respuesta con la esperada y revisa los eventos del CSV | B02, B03, B04 |
+| [client_check.py](server/tests/client_check.py) | Reemplaza al servidor: espera a un ESP32 real, le envía comandos y líneas inválidas, lo desconecta y comprueba cada respuesta del firmware | B05 |
+| [analyze_log.py](server/tests/analyze_log.py) | Lee el CSV del servidor o el log de un ESP32 y calcula cada valor medible: formato y frecuencia de las lecturas, zonas y comandos frente al algoritmo, latencias, falla segura, reconexión, reintentos, reinicios, protocolo y exactitud. Sin argumentos analiza el CSV más reciente | A01 a A08, B05 a B07 |
 | Celular | Video de los LEDs y, en A05, del sensor en la misma toma | A01, A05, B05 |
-| Cinta métrica de 5 m | Distancia de referencia | A02, A03, A04 |
+| Regla | Distancia de referencia | A02, A03, A04 |
 
 Cada línea de resultado de `analyze_log.py` empieza con el requisito que mide y termina con `PASS` (cumple), `FAIL` (no cumple) o `NOT ENOUGH DATA` (el registro no alcanza para medirlo; por ejemplo, una corrida de menos de 10 min para RNF1). Cada prueba indica qué líneas usa. La línea `RF2/RF5/RF6 control` repite cada lectura del CSV con `ZoneController` y comprueba que la zona registrada es la que da el algoritmo y que cada cambio de zona, y solo él, tiene su comando; además, lista los cambios con la lectura que los causó.
 
@@ -1325,7 +1326,7 @@ Cada línea de resultado de `analyze_log.py` empieza con el requisito que mide y
 
 ### 4.2 A. Pruebas físicas y de entorno
 
-Cada prueba física empieza con el servidor recién iniciado (`python tcp_server.py`, desde `server/`), así cada una queda en su propio CSV, y con OI-1 y OI-2 encendidos y sus monitores serie abiertos, salvo que la prueba indique otra cosa. El sensor queda fijo, a unos 50 cm o más del piso para que el suelo no devuelva ecos, y el blanco es una superficie plana y rígida (por ejemplo, una tapa de cartón de 20 × 20 cm), perpendicular al eje del sensor. Las distancias se miden con la cinta desde el frente de los transductores del HC-SR04.
+Cada prueba física empieza con el servidor recién iniciado (`python tcp_server.py`, desde `server/`), así cada una queda en su propio CSV, y con OI-1 y OI-2 encendidos y sus monitores serie abiertos, salvo que la prueba indique otra cosa. El sensor queda fijo, a unos 50 cm o más del piso para que el suelo no devuelva ecos, y el blanco es una superficie plana y rígida (por ejemplo, una tapa de cartón de 20 × 20 cm), perpendicular al eje del sensor. Las distancias se miden con la regla desde el frente de los transductores del HC-SR04.
 
 #### A01. Arranque y funcionamiento por zona
 
@@ -1334,30 +1335,29 @@ Comprueba la cadena completa con el hardware real: medición, clasificación, co
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
 | A01-A | RF3, RF4 | 1. Iniciar el servidor con OI-1 y OI-2 apagados.<br>2. Encender OI-2 y observar los LEDs.<br>3. Encender OI-1. | CSV: `REGISTER ACTUATOR`, `SET 0 ALL BLINK` y `ACK 0`; después, `REGISTER SENSOR` y, con la primera lectura, el `SET` de su zona.<br>Log de OI-2: `SERVER_CONNECTED` con su IP, `TX REGISTER ACTUATOR`, `RX OK`, `RX SET 0 ALL BLINK` y `TX ACK 0`.<br>Los tres LEDs parpadean juntos hasta que llega la primera lectura. | El CSV `server_20261013_102843.csv` registra `REGISTER ACTUATOR` (t = 4024.2 ms), `SET 0 ALL BLINK` y `ACK 0` (`latency_ms` = 473.4). OI-2 queda con los tres LEDs parpadeando juntos hasta que OI-1 se registra (t = 82 590.8 ms); su primera lectura, `POST 24 46.5`, produce `SET 24 WHITE ON` y `ACK 24` (42.5 ms). La consola del servidor y el log de OI-2 muestran la misma secuencia. | Aprobada | [A01-A_arranque_error.mp4](docs/evidencias/A01/A01-A_arranque_error.mp4), [A01-A_consola_servidor.png](docs/evidencias/A01/A01-A_consola_servidor.png), [A01-A_log_oi2.png](docs/evidencias/A01/A01-A_log_oi2.png), [server_20261013_102843.csv](docs/evidencias/A01/server_20261013_102843.csv) |
-| A01-B | RF1, RF2, RF3, RF4 | 1. Colocar el blanco a 10 cm y filmar los LEDs durante 10 s.<br>2. Repetir a 30 cm y a 60 cm.<br>3. Ejecutar `python analyze_log.py`. | Líneas `RF1 format`, `RF2/RF5/RF6 control` y `RF4 protocol` → `PASS`: lecturas con un decimal, zonas NEAR, MEDIUM y FAR según la Tabla 1 y un solo comando por cambio de zona, cada uno con su `ACK`.<br>Para un cambio de zona, la cadena `TX POST n` (OI-1) → `SET n` (CSV) → `RX SET n` y `TX ACK n` (OI-2) con el mismo `n`.<br>Video: solo el LED de la zona se enciende; el rojo y el amarillo parpadean y el blanco queda fijo. | En los cuatro CSV de la prueba, todas las lecturas tienen un decimal (`RF1 format`) y la zona registrada coincide con la del algoritmo en cada lectura, con un solo comando por cambio de zona (`RF2/RF5/RF6 control`, 0 diferencias). Cadenas en `server_20261013_103410.csv`: `POST 24 10.1` → `SET 24 RED BLINK`; `POST 74 23.2` → `SET 74 YELLOW BLINK` → `ACK 74` (62.6 ms); `POST 95 44.8` → `SET 95 WHITE ON` → `ACK 95` (23.5 ms). En los videos solo se enciende el LED de la zona: el rojo y el amarillo parpadean y el blanco queda fijo.<br>Observación: en `103410` el `SET 24` no tiene `ACK` porque se envió mientras la conexión de OI-2 estaba caída; OI-2 se registró de nuevo (t = 15 570.3 ms) y recibió el estado vigente (`SET 0 RED BLINK`), como establece RF7 (c). | Aprobada | [A01-B_near_rojo.mp4](docs/evidencias/A01/A01-B_near_rojo.mp4), [A01-B_medium_amarillo.mp4](docs/evidencias/A01/A01-B_medium_amarillo.mp4), [A01-B_far_blanco.mp4](docs/evidencias/A01/A01-B_far_blanco.mp4), CSV `server_20261013_103320`, `103410` y `111340` |
+| A01-B | RF1, RF2, RF3, RF4 | 1. Colocar el blanco a 10 cm y filmar los LEDs durante 10 s.<br>2. Repetir a 30 cm y a 60 cm.<br>3. Ejecutar `python -m tests.analyze_log`. | Líneas `RF1 format`, `RF2/RF5/RF6 control` y `RF4 protocol` → `PASS`: lecturas con un decimal, zonas NEAR, MEDIUM y FAR según la Tabla 1 y un solo comando por cambio de zona, cada uno con su `ACK`.<br>Para un cambio de zona, la cadena `TX POST n` (OI-1) → `SET n` (CSV) → `RX SET n` y `TX ACK n` (OI-2) con el mismo `n`.<br>Video: solo el LED de la zona se enciende; el rojo y el amarillo parpadean y el blanco queda fijo. | En los cuatro CSV de la prueba, todas las lecturas tienen un decimal (`RF1 format`) y la zona registrada coincide con la del algoritmo en cada lectura, con un solo comando por cambio de zona (`RF2/RF5/RF6 control`, 0 diferencias). Cadenas en `server_20261013_103410.csv`: `POST 24 10.1` → `SET 24 RED BLINK`; `POST 74 23.2` → `SET 74 YELLOW BLINK` → `ACK 74` (62.6 ms); `POST 95 44.8` → `SET 95 WHITE ON` → `ACK 95` (23.5 ms). En los videos solo se enciende el LED de la zona: el rojo y el amarillo parpadean y el blanco queda fijo.<br>Observación: en `103410` el `SET 24` no tiene `ACK` porque se envió mientras la conexión de OI-2 estaba caída; OI-2 se registró de nuevo (t = 15 570.3 ms) y recibió el estado vigente (`SET 0 RED BLINK`), como establece RF7 (c). | Aprobada | [A01-B_near_rojo.mp4](docs/evidencias/A01/A01-B_near_rojo.mp4), [A01-B_medium_amarillo.mp4](docs/evidencias/A01/A01-B_medium_amarillo.mp4), [A01-B_far_blanco.mp4](docs/evidencias/A01/A01-B_far_blanco.mp4), CSV `server_20261013_103320`, `103410` y `111340` |
 | A01-C | RF3 | 1. En los videos de 10 y 30 cm, contar los destellos durante 10 s, reproduciendo a velocidad reducida.<br>2. Desconectar el USB de OI-1, filmar 10 s los LEDs, contar los destellos y volver a conectar OI-1. | 20 ± 1 destellos en 10 s en NEAR, MEDIUM y ERROR: 2 Hz, con 250 ms encendido y 250 ms apagado, y un ritmo regular que no se reinicia mientras la zona no cambia.<br>En ERROR, los tres LEDs se encienden y se apagan juntos, un patrón distinto del de cualquier zona. | Rojo: 20 destellos en 10.0 s; amarillo: 20 en 10.0 s; ERROR: 20 en 10.0 s, con los tres LEDs juntos (2 Hz). En FAR el LED blanco permanece encendido fijo. El ritmo no se reinicia mientras la zona no cambia. Al desconectar OI-1, los tres LEDs pasan a parpadear juntos, y al reconectarlo el sistema vuelve a su zona. | Aprobada | [A01-C_conteo_rojo.mp4](docs/evidencias/A01/A01-C_conteo_rojo.mp4), [A01-C_conteo_amarillo.mp4](docs/evidencias/A01/A01-C_conteo_amarillo.mp4), [A01-C_conteo_blanco.mp4](docs/evidencias/A01/A01-C_conteo_blanco.mp4), [A01-C_error_desconexion.mp4](docs/evidencias/A01/A01-C_error_desconexion.mp4), [A01-C_error_reconexion.mp4](docs/evidencias/A01/A01-C_error_reconexion.mp4) |
 
 #### A02. Exactitud de la distancia
 
-Mide el error de cada lectura frente a la cinta métrica en el rango de RNF2. Los siete puntos incluyen los extremos del rango (5 y 100 cm) y las dos fronteras (20 y 40 cm).
+Mide el error de cada lectura frente a la regla en el rango de RNF2. Los siete puntos incluyen los extremos del rango (5 y 100 cm) y las dos fronteras (20 y 40 cm).
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A02 | RF1, RNF2 | 1. Anotar la temperatura ambiente.<br>2. Para cada punto, en orden creciente (5, 10, 20, 30, 40, 60 y 100 cm): colocar el blanco, esperar 2 s, anotar el `seq` del último `POST` de la consola del servidor y esperar 2 s más.<br>3. Ejecutar `python analyze_log.py 5:<seq> 10:<seq> 20:<seq> 30:<seq> 40:<seq> 60:<seq> 100:<seq>`, con el `seq` anotado en cada punto.<br>4. Completar la Tabla 3. | Siete líneas `RNF2` → `PASS`: 10 lecturas válidas por punto, cada una con error ≤ 3.0 cm.<br>Máximo − mínimo de cada punto < 2.0 cm: la dispersión de un objeto quieto es menor que la histéresis (§1.4). | | | |
+| A02 | RF1, RNF2 | 1. Para cada punto, en orden creciente (5, 10, 20, 30, 40, 60 y 100 cm): colocar el blanco, esperar 2 s, anotar el `seq` del último `POST` de la consola del servidor y esperar 2 s más.<br>2. Ejecutar `python -m tests.analyze_log 5:<seq> 10:<seq> 20:<seq> 30:<seq> 40:<seq> 60:<seq> 100:<seq>`, con el `seq` anotado en cada punto.<br>3. Completar la Tabla 3. | Siete líneas `RNF2` → `PASS`: 10 lecturas válidas por punto, cada una con error ≤ 3.0 cm.<br>Máximo − mínimo de cada punto < 2.0 cm: la dispersión de un objeto quieto es menor que la histéresis (§1.4). | Siete de siete puntos `PASS` (Tabla 3): 10 lecturas válidas por punto, todas con un decimal, y error máximo individual de 2.6 cm (a 100 cm), por debajo de 3.0 cm. Máximo − mínimo ≤ 1.0 cm en todos los puntos, menor que la histéresis de 2 cm.<br>Observación: desde 40 cm el sensor mide un poco menos que la regla, y la diferencia crece con la distancia (−1.3 cm a 40 cm, −2.0 cm a 60 cm y −2.4 cm a 100 cm, en promedio). Es un error sistemático, no aleatorio, porque la dispersión de cada punto es pequeña; se analiza en §4.4. | Aprobada | [server_20261013_122713.csv](docs/evidencias/A02/server_20261013_122713.csv), [server_20261013_123746.csv](docs/evidencias/A02/server_20261013_123746.csv), fotos de la regla en cada punto ([docs/evidencias/A02/](docs/evidencias/A02/)) |
 
-**Tabla 3.** Registro de exactitud (A02), copiado de las líneas `RNF2` de `analyze_log.py`. Error individual: e<sub>i</sub> = |d<sub>i</sub> − d<sub>ref</sub>|. Error del promedio: |d̄ − d<sub>ref</sub>|.
+**Tabla 3.** Registro de exactitud (A02), copiado de las líneas `RNF2` de `analyze_log.py`. Los puntos de 5 a 60 cm están en `server_20261013_122713.csv` y el de 100 cm, en `server_20261013_123746.csv`. Error individual: e<sub>i</sub> = |d<sub>i</sub> − d<sub>ref</sub>|. Error del promedio: |d̄ − d<sub>ref</sub>|.
 
 | d<sub>ref</sub> (cm) | `seq` inicial | Lecturas válidas | Mín. (cm) | Máx. (cm) | Promedio (cm) | Error máx. individual (cm) | Error del promedio (cm) | Máx. − mín. (cm) | Veredicto |
 |---|---|---|---|---|---|---|---|---|---|
-| 5.0 | | | | | | | | | |
-| 10.0 | | | | | | | | | |
-| 20.0 | | | | | | | | | |
-| 30.0 | | | | | | | | | |
-| 40.0 | | | | | | | | | |
-| 60.0 | | | | | | | | | |
-| 100.0 | | | | | | | | | |
+| 5.0 | 300 | 10 | 4.5 | 4.6 | 4.58 | 0.5 | 0.42 | 0.1 | PASS |
+| 10.0 | 500 | 10 | 9.8 | 9.9 | 9.81 | 0.2 | 0.19 | 0.1 | PASS |
+| 20.0 | 600 | 10 | 19.4 | 20.4 | 19.51 | 0.6 | 0.49 | 1.0 | PASS |
+| 30.0 | 700 | 10 | 30.0 | 30.0 | 30.00 | 0.0 | 0.00 | 0.0 | PASS |
+| 40.0 | 810 | 10 | 38.6 | 38.7 | 38.69 | 1.4 | 1.31 | 0.1 | PASS |
+| 60.0 | 1000 | 10 | 57.9 | 58.0 | 57.96 | 2.1 | 2.04 | 0.1 | PASS |
+| 100.0 | 200 | 10 | 97.4 | 97.8 | 97.56 | 2.6 | 2.44 | 0.4 | PASS |
 
-El firmware usa la velocidad del sonido a 20 °C (`SOUND_SPEED_CM_PER_US = 0.0343`, es decir, 343 m/s). A otra temperatura T, c ≈ 331.3 + 0.606 · T m/s y la lectura queda escalada por 343 / c. Por ejemplo, a 10 °C la lectura es ≈ 1.7 % mayor que la distancia real: 1.7 cm a 100 cm. Este dato sirve para separar el error sistemático del aleatorio en §4.4.
 
 #### A03. Límites del rango de medición
 
@@ -1365,8 +1365,8 @@ El firmware usa la velocidad del sonido a 20 °C (`SOUND_SPEED_CM_PER_US = 0.034
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A03-A | RF1, RF2 | 1. Colocar el blanco a 2 cm, esperar 2 s, anotar el `seq` del último `POST` y esperar 2 s más.<br>2. Acercar el blanco hasta 1 cm (zona ciega) y mantenerlo 10 s.<br>3. Ejecutar `python analyze_log.py 2:<seq>`. | Línea `RF2 range limit 2.0 cm` → `PASS`: 10 de 10 lecturas válidas, zona NEAR y LED rojo parpadeando.<br>A 1 cm, ninguna lectura queda en MEDIUM ni en FAR: el sistema muestra NEAR o, si las lecturas son inválidas, ERROR. | | | |
-| A03-B | RF1, RF2 | 1. Colocar la pared o el blanco grande a 300 cm, esperar 2 s, anotar el `seq` y esperar 2 s más.<br>2. Repetir a 400 cm.<br>3. Ejecutar `python analyze_log.py 300:<seq> 400:<seq>`. | Dos líneas `RF2 range limit` → `PASS`: 10 de 10 lecturas válidas en cada distancia, zona FAR y LED blanco fijo.<br>Se informa el error en cada distancia; RNF2 no lo limita, porque su rango es de 5 a 100 cm. | | | |
+| A03-A | RF1, RF2 | 1. Colocar el blanco a 2 cm, esperar 2 s, anotar el `seq` del último `POST` y esperar 2 s más.<br>2. Acercar el blanco hasta 1 cm (zona ciega) y mantenerlo 10 s.<br>3. Ejecutar `python -m tests.analyze_log 2:<seq>`. | Línea `RF2 range limit 2.0 cm` → `PASS`: 10 de 10 lecturas válidas, zona NEAR y LED rojo parpadeando.<br>A 1 cm, ninguna lectura queda en MEDIUM ni en FAR: el sistema muestra NEAR o, si las lecturas son inválidas, ERROR. | | | |
+| A03-B | RF1, RF2 | 1. Colocar la pared o el blanco grande a 300 cm, esperar 2 s, anotar el `seq` y esperar 2 s más.<br>2. Repetir a 400 cm.<br>3. Ejecutar `python -m tests.analyze_log 300:<seq> 400:<seq>`. | Dos líneas `RF2 range limit` → `PASS`: 10 de 10 lecturas válidas en cada distancia, zona FAR y LED blanco fijo.<br>Se informa el error en cada distancia; RNF2 no lo limita, porque su rango es de 5 a 100 cm. | | | |
 | A03-C | RF1, RF6 | 1. Apuntar el sensor a un espacio sin obstáculos a menos de 5 m (un pasillo largo o hacia el cielo, en exteriores) durante 10 s.<br>2. Volver a colocar el blanco a 30 cm. | `POST n NAN` (el eco no termina en 25 ms) o lecturas mayores que 400.0 cm; en la tercera inválida seguida, `SET n ALL BLINK` y los tres LEDs parpadean.<br>Con el blanco a 30 cm, la primera lectura válida vuelve a MEDIUM.<br>Línea `RF2/RF5/RF6 control` → `PASS`. | | | |
 
 **Tabla 4.** Registro de los límites del rango (A03)
@@ -1388,7 +1388,7 @@ Comprueba que la histéresis evita los cambios de zona de un objeto quieto en un
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
 | A04-A | RF5 | 1. Llevar el blanco de 10 a 20 cm y mantenerlo quieto 60 s.<br>2. Llevarlo a 30 cm y después a 40 cm, y mantenerlo quieto 60 s.<br>3. Observar los LEDs y la consola del servidor. | 0 eventos `SET` en cada ventana de 60 s; los LEDs no cambian.<br>A 20 cm el sistema sigue en NEAR y a 40 cm sigue en MEDIUM, porque llega desde esas zonas y no supera los umbrales de 22 y 42 cm. | | | |
-| A04-B | RF5 | 1. Deslizar el blanco despacio, a unos 1 cm/s, de 10 a 30 cm y de vuelta a 10 cm.<br>2. Hacer lo mismo de 30 a 50 cm y de vuelta a 30 cm.<br>3. Ejecutar `python analyze_log.py`. | Línea `RF2/RF5/RF6 control` → `PASS`.<br>En su lista de cambios, aparte del primero desde ERROR, un solo cambio por cada cruce de frontera: NEAR → MEDIUM con una lectura ≥ 22.0 cm, MEDIUM → NEAR con una < 18.0 cm, MEDIUM → FAR con una ≥ 42.0 cm y FAR → MEDIUM con una < 38.0 cm. | | | |
+| A04-B | RF5 | 1. Deslizar el blanco despacio, a unos 1 cm/s, de 10 a 30 cm y de vuelta a 10 cm.<br>2. Hacer lo mismo de 30 a 50 cm y de vuelta a 30 cm.<br>3. Ejecutar `python -m tests.analyze_log`. | Línea `RF2/RF5/RF6 control` → `PASS`.<br>En su lista de cambios, aparte del primero desde ERROR, un solo cambio por cada cruce de frontera: NEAR → MEDIUM con una lectura ≥ 22.0 cm, MEDIUM → NEAR con una < 18.0 cm, MEDIUM → FAR con una ≥ 42.0 cm y FAR → MEDIUM con una < 38.0 cm. | | | |
 
 #### A05. Tiempo de respuesta extremo a extremo
 
@@ -1396,7 +1396,7 @@ RNF3 se mide con el reloj del servidor (A05-A) y se confirma directamente con vi
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A05-A | RNF3 | 1. Apuntar el sensor a una pared o a un blanco fijo a 60 cm o más (FAR).<br>2. Filmar con el celular el sensor y los LEDs en la misma toma.<br>3. Insertar de golpe una tarjeta a unos 10 cm del sensor (FAR → NEAR), esperar 3 s, retirarla de golpe (NEAR → FAR) y esperar 3 s.<br>4. Repetir hasta completar al menos 10 cambios de zona.<br>5. Ejecutar `python analyze_log.py`. | Línea `RNF3` → `PASS`: al menos 10 cambios de zona y peor tiempo de respuesta, 100 ms + `latency_ms` máximo, ≤ 1000 ms.<br>Se informan el mínimo, la mediana, el percentil 95 y el máximo de `latency_ms`. | | | |
+| A05-A | RNF3 | 1. Apuntar el sensor a una pared o a un blanco fijo a 60 cm o más (FAR).<br>2. Filmar con el celular el sensor y los LEDs en la misma toma.<br>3. Insertar de golpe una tarjeta a unos 10 cm del sensor (FAR → NEAR), esperar 3 s, retirarla de golpe (NEAR → FAR) y esperar 3 s.<br>4. Repetir hasta completar al menos 10 cambios de zona.<br>5. Ejecutar `python -m tests.analyze_log`. | Línea `RNF3` → `PASS`: al menos 10 cambios de zona y peor tiempo de respuesta, 100 ms + `latency_ms` máximo, ≤ 1000 ms.<br>Se informan el mínimo, la mediana, el percentil 95 y el máximo de `latency_ms`. | | | |
 | A05-B | RNF3 | 1. En el video de A05-A, elegir 5 cambios de zona y avanzar cuadro por cuadro (por ejemplo, con la tecla E de VLC).<br>2. En cada uno: f<sub>0</sub> = primer cuadro en que la tarjeta cubre (o deja de cubrir) el sensor; f<sub>1</sub> = primer cuadro con el LED del nuevo estado encendido.<br>3. Calcular Δt = (f<sub>1</sub> − f<sub>0</sub>) / fps del video. | Δt ≤ 1000 ms en los 5 cambios.<br>Cada Δt es coherente con A05-A: de 0 a 100 ms de espera hasta la siguiente lectura, más el `latency_ms` de ese cambio, más la resolución del video (un cuadro, 33 ms a 30 fps). | | | |
 
 #### A06. Lecturas inválidas con el hardware
@@ -1405,7 +1405,7 @@ Comprueba con el sensor real que las lecturas inválidas llegan al servidor y qu
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A06 | RF1, RF6 | 1. Blanco a 30 cm (MEDIUM).<br>2. Desconectar el cable ECHO del lado del sensor durante unos 3 s y volver a conectarlo.<br>3. Repetir 2 veces.<br>4. Ejecutar `python analyze_log.py`. | Línea `RF2/RF5/RF6 control` → `PASS`, con dos cambios MEDIUM → ERROR en la tercera `NAN` seguida, unos 200 ms después de la primera, y dos cambios ERROR → MEDIUM al reconectar.<br>Los tres LEDs parpadean mientras ECHO está desconectado.<br>OI-1 sigue conectado: ningún `SERVER_LOST` ni `BOOT` en su log. | | | |
+| A06 | RF1, RF6 | 1. Blanco a 30 cm (MEDIUM).<br>2. Desconectar el cable ECHO del lado del sensor durante unos 3 s y volver a conectarlo.<br>3. Repetir 2 veces.<br>4. Ejecutar `python -m tests.analyze_log`. | Línea `RF2/RF5/RF6 control` → `PASS`, con dos cambios MEDIUM → ERROR en la tercera `NAN` seguida, unos 200 ms después de la primera, y dos cambios ERROR → MEDIUM al reconectar.<br>Los tres LEDs parpadean mientras ECHO está desconectado.<br>OI-1 sigue conectado: ningún `SERVER_LOST` ni `BOOT` en su log. | | | |
 
 #### A07. Pérdida del sensor
 
@@ -1413,7 +1413,7 @@ Comprueba la falla segura cuando el servidor pierde al sensor sin que este cierr
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A07 | RF7 (a), RF7 (c) | 1. Blanco a 10 cm (NEAR).<br>2. Desconectar de golpe el USB de OI-1, esperar 5 s y volver a conectarlo.<br>3. Repetir una vez más y, la tercera vez, presionar el botón EN de OI-1 (reinicio sin cortar la alimentación).<br>4. Ejecutar `python analyze_log.py`. | Tres líneas `RF7 (a)` con `SENSOR/timeout` unos 1000 ms después de la última lectura y `ACK 0` ≤ 1500 ms → `PASS`.<br>Los tres LEDs parpadean mientras OI-1 no está; al volver, OI-1 se registra de nuevo sin intervención y el sistema vuelve a NEAR.<br>`analyze_log.py` informa 3 reinicios de `seq`: OI-1 arranca de nuevo (§2.5.4). | | | |
+| A07 | RF7 (a), RF7 (c) | 1. Blanco a 10 cm (NEAR).<br>2. Desconectar de golpe el USB de OI-1, esperar 5 s y volver a conectarlo.<br>3. Repetir una vez más y, la tercera vez, presionar el botón EN de OI-1 (reinicio sin cortar la alimentación).<br>4. Ejecutar `python -m tests.analyze_log`. | Tres líneas `RF7 (a)` con `SENSOR/timeout` unos 1000 ms después de la última lectura y `ACK 0` ≤ 1500 ms → `PASS`.<br>Los tres LEDs parpadean mientras OI-1 no está; al volver, OI-1 se registra de nuevo sin intervención y el sistema vuelve a NEAR.<br>`analyze_log.py` informa 3 reinicios de `seq`: OI-1 arranca de nuevo (§2.5.4). | | | |
 
 #### A08. Caída de la red WiFi
 
@@ -1421,15 +1421,15 @@ Comprueba que, sin red, OI-2 muestra ERROR por sí mismo y que los tres nodos se
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| A08 | RF7 (a), RF7 (b), RF7 (c) | 1. Blanco a 30 cm (MEDIUM).<br>2. Apagar el punto de acceso durante 40 s y volver a encenderlo.<br>3. Comprobar con `ipconfig` que la PC conserva la IP del evento `START`; si cambió, la repetición no cuenta.<br>4. Repetir una vez más.<br>5. Ejecutar `python analyze_log.py` con el CSV y con los logs de OI-1 y OI-2. | CSV: `DISCONNECT SENSOR/timeout` unos 1000 ms después de la última lectura y, al volver la red, `REGISTER SENSOR` y `REGISTER ACTUATOR`; el sistema vuelve a MEDIUM sin tocar ningún nodo.<br>Logs de OI-1 y OI-2: `SERVER_LOST wifi=down`, líneas `RF7 (c) WiFi requests` (cada 10 000 ± 300 ms) y `RNF1 restarts` (0) → `PASS`.<br>Los tres LEDs parpadean mientras no hay red. | | | |
+| A08 | RF7 (a), RF7 (b), RF7 (c) | 1. Blanco a 30 cm (MEDIUM).<br>2. Apagar el punto de acceso durante 40 s y volver a encenderlo.<br>3. Comprobar con `ipconfig` que la PC conserva la IP del evento `START`; si cambió, la repetición no cuenta.<br>4. Repetir una vez más.<br>5. Ejecutar `python -m tests.analyze_log` con el CSV y con los logs de OI-1 y OI-2. | CSV: `DISCONNECT SENSOR/timeout` unos 1000 ms después de la última lectura y, al volver la red, `REGISTER SENSOR` y `REGISTER ACTUATOR`; el sistema vuelve a MEDIUM sin tocar ningún nodo.<br>Logs de OI-1 y OI-2: `SERVER_LOST wifi=down`, líneas `RF7 (c) WiFi requests` (cada 10 000 ± 300 ms) y `RNF1 restarts` (0) → `PASS`.<br>Los tres LEDs parpadean mientras no hay red. | | | |
 
 ### 4.3 B. Pruebas automáticas
 
-B02, B03 y B04 se ejecutan juntas con un solo comando, sin las placas: el servidor en marcha y, desde `server/`, `cmd /c "python system_check.py > B02-B04_salida.txt 2>&1"`. La salida agrupa los casos por prueba (`ProtocolTest` es B02, `ControlTest` es B03 y `DisconnectionTest` es B04), y cada prueba se aprueba si todos sus casos terminan en `ok`. Cada caso termina con el sensor desconectado, así el siguiente empieza en ERROR. Si una placa quedó encendida, el servidor no empieza en ERROR y los casos fallan; así la prueba verifica también su condición inicial.
+B02, B03 y B04 se ejecutan juntas con un solo comando, sin las placas: el servidor en marcha y, desde `server/`, `cmd /c "python -m tests.system_check > B02-B04_salida.txt 2>&1"`. La salida agrupa los casos por prueba (`ProtocolTest` es B02, `ControlTest` es B03 y `DisconnectionTest` es B04), y cada prueba se aprueba si todos sus casos terminan en `ok`. Cada caso termina con el sensor desconectado, así el siguiente empieza en ERROR. Si una placa quedó encendida, el servidor no empieza en ERROR y los casos fallan; así la prueba verifica también su condición inicial.
 
 #### B01. Pruebas unitarias del algoritmo de control
 
-Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_controller.py](server/test_zone_controller.py), sin red ni hardware.
+Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_controller.py](server/tests/test_zone_controller.py), sin red ni hardware.
 
 | Clase de prueba | Casos | Qué comprueba | Requisito |
 |---|---|---|---|
@@ -1480,7 +1480,7 @@ Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_cont
 
 #### B03. Algoritmo de control por TCP
 
-El sensor simulado envía distancias exactas, imposibles de colocar con una cinta métrica, por la misma conexión TCP que usa OI-1. El caso pasa solo si el actuador simulado recibe exactamente los `SET` de la Tabla 7, en orden, con el `seq` de la lectura que los causó y ninguno más, y si cada `ACK` queda en el CSV con su `latency_ms`. Al cerrar el sensor, el actuador recibe además `SET 0 ALL BLINK`.
+El sensor simulado envía distancias exactas, imposibles de colocar con una regla, por la misma conexión TCP que usa OI-1. El caso pasa solo si el actuador simulado recibe exactamente los `SET` de la Tabla 7, en orden, con el `seq` de la lectura que los causó y ninguno más, y si cada `ACK` queda en el CSV con su `latency_ms`. Al cerrar el sensor, el actuador recibe además `SET 0 ALL BLINK`.
 
 **Tabla 7.** Escenarios de B03 (`ControlTest`). Las lecturas se numeran con `seq` 1, 2, 3, …
 
@@ -1520,7 +1520,7 @@ Un envío fallido no se puede provocar a voluntad por la red: si el actuador cie
 
 #### B05. Firmware de OI-1 y OI-2 con un servidor de prueba
 
-[client_check.py](server/client_check.py) ocupa el lugar del servidor: escucha en el puerto 5050, espera a una placa y le envía mensajes que el servidor real nunca envía, para comprobar cómo responde el firmware. Los pasos de cada placa se ejecutan en orden sobre la misma conexión. En el paso 4, el servidor de prueba cierra la conexión y deja de escuchar durante 6 s, y mide cuánto tarda la placa en registrarse otra vez cuando vuelve a escuchar.
+[client_check.py](server/tests/client_check.py) ocupa el lugar del servidor: escucha en el puerto 5050, espera a una placa y le envía mensajes que el servidor real nunca envía, para comprobar cómo responde el firmware. Los pasos de cada placa se ejecutan en orden sobre la misma conexión. En el paso 4, el servidor de prueba cierra la conexión y deja de escuchar durante 6 s, y mide cuánto tarda la placa en registrarse otra vez cuando vuelve a escuchar.
 
 **Tabla 9.** Pasos de B05
 
@@ -1550,14 +1550,14 @@ Un envío fallido no se puede provocar a voluntad por la red: si el actuador cie
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B05-A | RF3, RF4, RF7 (b), RF7 (c) | 1. Detener `tcp_server.py`; OI-1 apagado y OI-2 encendido, con su monitor serie abierto.<br>2. Desde `server/`: `cmd /c "python client_check.py ActuatorCheck > B05A_salida.txt 2>&1"`, filmando los LEDs.<br>3. Ejecutar `python analyze_log.py` con el log de OI-2. | 4 de 4 pasos `ok`.<br>Video: cada combinación del paso 2 se ve en los LEDs, nada cambia en el paso 3 y los tres parpadean mientras el servidor está cerrado.<br>Log de OI-2: `RX_TOO_LONG` para la línea de 33 caracteres y línea `RF7 (c) connection attempts` (cada 2000 ± 300 ms) → `PASS`. | | | |
-| B05-B | RF1, RF4, RF7 (c), RNF4 | 1. OI-2 apagado y OI-1 encendido, con su monitor serie abierto.<br>2. `cmd /c "python client_check.py SensorCheck > B05B_salida.txt 2>&1"`.<br>3. Ejecutar `python analyze_log.py` con el log de OI-1. | 4 de 4 pasos `ok`.<br>Log de OI-1: `RX_TOO_LONG` para la línea de 40 caracteres, `TX_FAILED` mientras el servidor está cerrado y líneas `RF7 (c) connection attempts` y `RNF1 restarts` (0) → `PASS`. | | | |
+| B05-A | RF3, RF4, RF7 (b), RF7 (c) | 1. Detener `tcp_server.py`; OI-1 apagado y OI-2 encendido, con su monitor serie abierto.<br>2. Desde `server/`: `cmd /c "python -m tests.client_check ActuatorCheck > B05A_salida.txt 2>&1"`, filmando los LEDs.<br>3. Ejecutar `python -m tests.analyze_log` con el log de OI-2. | 4 de 4 pasos `ok`.<br>Video: cada combinación del paso 2 se ve en los LEDs, nada cambia en el paso 3 y los tres parpadean mientras el servidor está cerrado.<br>Log de OI-2: `RX_TOO_LONG` para la línea de 33 caracteres y línea `RF7 (c) connection attempts` (cada 2000 ± 300 ms) → `PASS`. | | | |
+| B05-B | RF1, RF4, RF7 (c), RNF4 | 1. OI-2 apagado y OI-1 encendido, con su monitor serie abierto.<br>2. `cmd /c "python -m tests.client_check SensorCheck > B05B_salida.txt 2>&1"`.<br>3. Ejecutar `python -m tests.analyze_log` con el log de OI-1. | 4 de 4 pasos `ok`.<br>Log de OI-1: `RX_TOO_LONG` para la línea de 40 caracteres, `TX_FAILED` mientras el servidor está cerrado y líneas `RF7 (c) connection attempts` y `RNF1 restarts` (0) → `PASS`. | | | |
 
 #### B06. Reinicio del servidor con el sistema completo
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B06 | RF7 (b), RF7 (c), RNF5 | 1. Sistema completo con el blanco a 60 cm (FAR).<br>2. Detener el servidor con Ctrl+C y esperar 10 s.<br>3. Iniciar de nuevo el servidor, que crea un CSV nuevo, esperar 5 s y ejecutar `python analyze_log.py`.<br>4. Repetir 3 veces.<br>5. Ejecutar `python analyze_log.py` con los logs de OI-1 y OI-2. | En cada reinicio, las dos líneas `RNF5` (`REGISTER SENSOR` y `REGISTER ACTUATOR` ≤ 3000 ms después de `START`) → `PASS`, y la línea `RF2/RF5/RF6 control` muestra el cambio ERROR → FAR: el sistema vuelve a `WHITE ON` sin tocar ningún nodo.<br>Logs de OI-1 y OI-2: `SERVER_LOST wifi=up` en cada reinicio y líneas `RF7 (c) connection attempts` (cada 2000 ± 300 ms) y `RNF1 restarts` (0) → `PASS`.<br>Los tres LEDs parpadean mientras el servidor está detenido. | | | |
+| B06 | RF7 (b), RF7 (c), RNF5 | 1. Sistema completo con el blanco a 60 cm (FAR).<br>2. Detener el servidor con Ctrl+C y esperar 10 s.<br>3. Iniciar de nuevo el servidor, que crea un CSV nuevo, esperar 5 s y ejecutar `python -m tests.analyze_log`.<br>4. Repetir 3 veces.<br>5. Ejecutar `python -m tests.analyze_log` con los logs de OI-1 y OI-2. | En cada reinicio, las dos líneas `RNF5` (`REGISTER SENSOR` y `REGISTER ACTUATOR` ≤ 3000 ms después de `START`) → `PASS`, y la línea `RF2/RF5/RF6 control` muestra el cambio ERROR → FAR: el sistema vuelve a `WHITE ON` sin tocar ningún nodo.<br>Logs de OI-1 y OI-2: `SERVER_LOST wifi=up` en cada reinicio y líneas `RF7 (c) connection attempts` (cada 2000 ± 300 ms) y `RNF1 restarts` (0) → `PASS`.<br>Los tres LEDs parpadean mientras el servidor está detenido. | | | |
 
 #### B07. Estabilidad y frecuencia de muestreo
 
@@ -1565,15 +1565,17 @@ La corrida solo requiere dejar el sistema funcionando; el veredicto sale por com
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B07 | RF2, RF4, RF5, RF6, RNF1, RNF4 | 1. Iniciar el servidor y encender OI-2 y OI-1, con sus monitores serie abiertos.<br>2. Colocar el blanco a 30 cm y moverlo cada 2 min a otra zona (10, 30 o 60 cm), para que también circulen comandos y `ACK`.<br>3. Dejar el sistema funcionando 12 min sin tocar los nodos y detener el servidor con Ctrl+C.<br>4. Ejecutar `python analyze_log.py` con el CSV y con los logs de OI-1 y OI-2. | Línea `RNF4` → `PASS`: ≥ 50 lecturas en cada ventana de 10 s (el diseño da unas 100).<br>Línea `RNF1` → `PASS`: al menos 10 min de lecturas, intervalo máximo entre lecturas < 1000 ms, 0 reinicios de `seq` y 0 desconexiones; `RNF1 restarts` (0) en los logs de OI-1 y OI-2.<br>Líneas `RF2/RF5/RF6 control` y `RF4 protocol` → `PASS`.<br>Se informan las lecturas recibidas, perdidas e inválidas y el intervalo medio y el percentil 95 entre lecturas. | | | |
+| B07 | RF2, RF4, RF5, RF6, RNF1, RNF4 | 1. Iniciar el servidor y encender OI-2 y OI-1, con sus monitores serie abiertos.<br>2. Colocar el blanco a 30 cm y moverlo cada 2 min a otra zona (10, 30 o 60 cm), para que también circulen comandos y `ACK`.<br>3. Dejar el sistema funcionando 12 min sin tocar los nodos y detener el servidor con Ctrl+C.<br>4. Ejecutar `python -m tests.analyze_log` con el CSV y con los logs de OI-1 y OI-2. | Línea `RNF4` → `PASS`: ≥ 50 lecturas en cada ventana de 10 s (el diseño da unas 100).<br>Línea `RNF1` → `PASS`: al menos 10 min de lecturas, intervalo máximo entre lecturas < 1000 ms, 0 reinicios de `seq` y 0 desconexiones; `RNF1 restarts` (0) en los logs de OI-1 y OI-2.<br>Líneas `RF2/RF5/RF6 control` y `RF4 protocol` → `PASS`.<br>Se informan las lecturas recibidas, perdidas e inválidas y el intervalo medio y el percentil 95 entre lecturas. | | | |
 
 ### 4.4 Análisis de errores
 
 [PENDIENTE: completar después de ejecutar el plan. Por cada caso fallido o en el límite: valor medido frente al criterio, causa identificada con la evidencia (red, firmware, montaje o instrumento) y acción tomada o recomendada en §7.]
 
+- **A02, error sistemático creciente con la distancia.** Todos los puntos cumplen RNF2, pero desde 40 cm el promedio queda por debajo de la regla (−1.31 cm a 40 cm, −2.04 cm a 60 cm y −2.44 cm a 100 cm), mientras la dispersión de cada punto es de 0.4 cm o menos. Un error que crece con la distancia y casi no varía entre lecturas apunta a una causa sistemática, no al ruido del sensor: la constante de conversión (`CM_PER_ECHO_US`) o la ubicación del cero de la regla respecto del frente de los transductores. A 100 cm el margen frente al límite de 3 cm es de 0.4 cm; la acción recomendada está en §7.
+
 Fuentes de error conocidas, para orientar el análisis:
 
-- **Exactitud y límites (A02 y A03):** temperatura del aire distinta de 20 °C, que produce un error sistemático proporcional a la distancia (ver la nota bajo la Tabla 3); un blanco pequeño o inclinado, que produce ecos laterales o la pérdida del eco; el piso o los objetos cercanos, que a distancias largas devuelven ecos antes que la pared, porque el haz del HC-SR04 se abre unos 15°; la referencia de la cinta mal ubicada respecto al frente de los transductores.
+- **Exactitud y límites (A02 y A03):** un blanco pequeño o inclinado, que produce ecos laterales o la pérdida del eco; el piso o los objetos cercanos, que a distancias largas devuelven ecos antes que la pared, porque el haz del HC-SR04 se abre unos 15°; la referencia de la regla mal ubicada respecto al frente de los transductores.
 - **Tiempos (A05, A07, A08, B05 y B06):** la latencia de la red WiFi, donde cada mensaje cruza el aire dos veces (§2.1); la espera de 0 a 100 ms hasta la siguiente medición; la resolución del video (un cuadro, 33 ms a 30 fps).
 - **Pérdidas y bloqueos (B07):** congestión del canal WiFi, distancia al punto de acceso y ahorro de energía del adaptador WiFi de la PC.
 
@@ -1589,13 +1591,14 @@ Fuentes de error conocidas, para orientar el análisis:
 
 [PENDIENTE: recomendaciones ligadas a los hallazgos de las pruebas.]
 
+- **Calibrar la distancia (A02).** Medir dos o tres distancias de referencia, calcular el factor entre la distancia real y la medida, y ajustar `SensorConfig::CM_PER_ECHO_US` con ese factor. Así se elimina el error sistemático que crece con la distancia y se gana margen frente al límite de 3 cm de RNF2.
+
 Limitaciones conocidas del diseño y cómo resolverlas:
 
 - **Servidor que desaparece sin cerrar las conexiones** (por ejemplo, la PC pierde el WiFi o se suspende): OI-2 no lo detecta y mantiene el último estado, y el buffer de envío de OI-1 puede llenarse y detener el muestreo. Se resolvería con un mensaje periódico de supervisión (*heartbeat*) y un tiempo máximo de espera en los clientes.
 - **Espera de `connect()`:** mientras el servidor no responde, cada intento de conexión detiene el `loop()` hasta 250 ms, lo que alarga un parpadeo de ERROR. Se resolvería con una conexión asíncrona.
 - **IP del servidor fija en `Secrets.h`:** si la PC recibe otra IP hay que recargar los firmwares. Se resolvería reservando la IP en el punto de acceso o con mDNS.
 - **Sin autenticación:** cualquier equipo de la red puede registrarse como sensor o actuador. Se resolvería con una clave en `REGISTER` o con TLS.
-- **Velocidad del sonido fija (20 °C):** la temperatura del aire cambia la medición. Se resolvería con un sensor de temperatura y compensación.
 
 ## 8. Anexos
 
@@ -1605,4 +1608,3 @@ Limitaciones conocidas del diseño y cómo resolverlas:
 | A2 | [docs/img/circuito_oi2_actuador.svg](docs/img/circuito_oi2_actuador.svg) | Esquema eléctrico de OI-2, con las resistencias de los LEDs | — |
 | A3 | Bloques `mermaid` de este informe | Fuentes editables de los diagramas de arquitectura, clases, secuencia y estados | — |
 
-[PENDIENTE: fotos del montaje de OI-1 y OI-2; videos de A01, A05 y B05; carpeta `docs/evidencias/` con el CSV del servidor, los logs de OI-1 y OI-2 y la salida de los scripts de cada prueba.]
