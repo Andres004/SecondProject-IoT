@@ -32,9 +32,9 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(classify(40.0), Zone.FAR)
 
     def test_max_range_boundary(self):
-        """400.0 cm is FAR and 400.1 cm is invalid."""
-        self.assertEqual(classify(400.0), Zone.FAR)
-        self.assertEqual(classify(400.1), Zone.ERROR)
+        """200.0 cm is FAR and 200.1 cm is invalid."""
+        self.assertEqual(classify(200.0), Zone.FAR)
+        self.assertEqual(classify(200.1), Zone.ERROR)
 
     def test_non_numeric_readings(self):
         """NaN and infinity are invalid readings."""

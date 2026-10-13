@@ -1444,7 +1444,7 @@ Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_cont
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B01 | RF2, RF3, RF5, RF6 | Desde `server/`: `cmd /c "python -m unittest -v > B01_salida.txt 2>&1"`. | 17 de 17 casos `ok`; resumen final `Ran 17 tests` y `OK`. | | | |
+| B01 | RF2, RF3, RF5, RF6 | Desde `server/`: `cmd /c "python -m unittest -v > B01_salida.txt 2>&1"`. | 17 de 17 casos `ok`; resumen final `Ran 17 tests` y `OK`. | 17 de 17 casos `ok` y resumen `Ran 17 tests in 0.001s` / `OK`: `ClassifyTest` 5 de 5 (las fronteras 1.9/2.0, 19.9/20.0, 39.9/40.0 y 200.0/200.1 cm, `NaN` e infinito), `HysteresisTest` 7 de 7 (los cuatro umbrales, los dos saltos y la salida directa de ERROR), `InvalidReadingTest` 4 de 4 y `CommandTest` 1 de 1. | Aprobada | [B01_salida.txt](docs/evidencias/B01/B01_salida.txt) |
 
 #### B02. Protocolo del servidor
 
@@ -1480,7 +1480,7 @@ Ejecutan sobre `classify()` y `ZoneController` las 17 pruebas de [test_zone_cont
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B02 | RF4 | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 4 de 4 casos de `ProtocolTest` `ok`. | | | |
+| B02 | RF4 | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 4 de 4 casos de `ProtocolTest` `ok`. | 4 de 4 casos `ok`: registro y estado inicial, mensajes enviados antes del `OK`, los 16 mensajes inválidos de la Tabla 6 con su respuesta y el de 32 caracteres aceptado, y `ACK` sin comando pendiente. Resumen de la ejecución conjunta: `Ran 14 tests in 2.889s` y `OK`. | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
 
 #### B03. Algoritmo de control por TCP
 
@@ -1500,7 +1500,7 @@ El sensor simulado envía distancias exactas, imposibles de colocar con una regl
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B03 | RF2, RF3, RF5, RF6 | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 3 de 3 casos de `ControlTest` `ok`. | | | |
+| B03 | RF2, RF3, RF5, RF6 | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 3 de 3 casos de `ControlTest` `ok`. | 3 de 3 casos `ok`: en los tres escenarios de la Tabla 7 el actuador simulado recibió exactamente los `SET` esperados, en orden y con el `seq` de la lectura que los causó. | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
 
 #### B04. Desconexiones simuladas
 
@@ -1520,7 +1520,7 @@ Un envío fallido no se puede provocar a voluntad por la red: si el actuador cie
 
 | ID | Requisitos | Procedimiento | Criterio de éxito | Resultado observado | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| B04 | RF7 (a), RF7 (c) | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 7 de 7 casos de `DisconnectionTest` `ok`. | | | |
+| B04 | RF7 (a), RF7 (c) | Ejecución conjunta de `system_check.py` (inicio de §4.3). | 7 de 7 casos de `DisconnectionTest` `ok`. | 7 de 7 casos `ok`. Tiempos medidos hasta que `SET 0 ALL BLINK` llegó al actuador: 2 ms cuando el sensor cierra la conexión y 1016 ms cuando el sensor queda en silencio, dentro de la ventana de 1.0 a 1.5 s de RF7 (a). | Aprobada | [B02-B04_salida.txt](docs/evidencias/B02-B04/B02-B04_salida.txt), CSV del servidor ([docs/evidencias/B02-B04/](docs/evidencias/B02-B04/)) |
 
 #### B05. Firmware de OI-1 y OI-2 con un servidor de prueba
 

@@ -1,0 +1,36 @@
+test_ack_without_command (__main__.ProtocolTest.test_ack_without_command)
+An ACK with no command waiting gets no answer and no latency. ... ok
+test_invalid_messages (__main__.ProtocolTest.test_invalid_messages)
+Each invalid message gets its ERROR and the connection stays. ... ok
+test_messages_without_waiting_for_ok (__main__.ProtocolTest.test_messages_without_waiting_for_ok)
+A POST sent right after REGISTER, before the OK, is accepted. ... ok
+test_register_and_initial_state (__main__.ProtocolTest.test_register_and_initial_state)
+REGISTER gets OK and the actuator receives the state at once. ... ok
+test_boundaries_and_hysteresis (__main__.ControlTest.test_boundaries_and_hysteresis)
+RF2, RF5: each boundary in both directions, with hysteresis. ... ok
+test_isolated_invalid_readings (__main__.ControlTest.test_isolated_invalid_readings)
+RF6: one or two invalid readings keep the zone; three give ERROR. ... ok
+test_jumps_and_range_limits (__main__.ControlTest.test_jumps_and_range_limits)
+RF2, RF6: jumps NEAR <-> FAR and the limits 2.0 and 200.0 cm. ... ok
+test_actuator_absent_and_back (__main__.DisconnectionTest.test_actuator_absent_and_back)
+RF7 (c): the server works without actuator; a new one gets state. ... ok
+test_actuator_replaced (__main__.DisconnectionTest.test_actuator_replaced)
+RF7 (c): a new actuator replaces the old one and gets the state. ... ok
+test_send_failure (__main__.DisconnectionTest.test_send_failure)
+A SET that cannot be sent leaves the server without actuator. ... ok
+test_sensor_closes (__main__.DisconnectionTest.test_sensor_closes)
+RF7 (a): the sensor closes its connection -> ERROR at once. ... ok
+test_sensor_connection_error (__main__.DisconnectionTest.test_sensor_connection_error)
+RF7 (a): the connection of the sensor breaks -> ERROR at once. ... ok
+test_sensor_replaced (__main__.DisconnectionTest.test_sensor_replaced)
+RF7 (c): a new sensor replaces the old one, which is ignored. ... ok
+test_silent_sensor (__main__.DisconnectionTest.test_silent_sensor)
+RF7 (a): a sensor silent for 1.0 s is lost -> ERROR. ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.889s
+
+OK
+
+  ERROR reached the actuator 2 ms after the last reading 
+  ERROR reached the actuator 1016 ms after the last reading 
