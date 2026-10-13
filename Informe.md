@@ -173,7 +173,7 @@ flowchart LR
     AP <-. "802.11" .-> OI2
 ```
 
-**Figura 2a.** Red física. Los tres nodos son estaciones del mismo punto de acceso, que les asigna la IP por DHCP. Todo mensaje entre dos nodos pasa por el punto de acceso. Las dos placas no tienen ningún cable en común: solo se comunican por WiFi.
+**Figura 2a.** Red física. Los tres nodos son estaciones del mismo punto de acceso, que les asigna la IP por DHCP. Todo mensaje entre dos nodos pasa por el punto de acceso. Las dos placas no tienen ninguna señal de datos en común: solo se comunican por WiFi.
 
 ```mermaid
 flowchart LR
@@ -268,7 +268,7 @@ Hay dos confirmaciones distintas: el ACK de TCP solo indica que los bytes llegar
 
 - **Pines:** los dos objetos usan solo GPIO 25, 26 y 27. No son pines de arranque (*strapping*: 0, 2, 5, 12 y 15), no están conectados a la memoria flash (6 a 11) y no son de solo entrada (34 a 39).
 - **Placas:** las dos usan el mismo chip ESP32 y el código nombra los pines por su número de GPIO, así que en PlatformIO ambas usan `board = esp32dev`.
-- **Alimentación:** cada placa se alimenta por su propio USB. No comparten tierra porque no hay cables entre ellas: solo se comunican por WiFi.
+- **Alimentación:** cada placa se alimenta por su propio USB. Comparten el riel de GND de la protoboard, que solo es la referencia común; no hay ninguna señal de datos entre ellas, que solo se comunican por WiFi.
 - **Red:** el ESP32 solo se conecta a redes de 2.4 GHz. La PC debe estar en la misma red y aceptar conexiones TCP entrantes en el puerto 5050 (§3.4).
 
 ### 2.2.4 Montaje real
