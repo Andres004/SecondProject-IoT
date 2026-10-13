@@ -1,0 +1,47 @@
+ets[t_ms=       30] BOOT               ACTUATOR red=25 yellow=26 white=27
+[t_ms=      140] WIFI_CONNECTING    ssid=FLIA-OROZCO-2.4G
+[t_ms=     3046] SERVER_CONNECTED   server=192.168.1.32:5050 local_ip=192.168.1.56
+[t_ms=     3048] TX                 REGISTER ACTUATOR
+[t_ms=     3110] RX                 OK
+[t_ms=     3111] RX                 SET 0 RED BLINK
+[t_ms=     3114] TX                 ACK 0
+[t_ms=     3754] RX                 SET 1349 WHITE ON
+[t_ms=     3757] TX                 ACK 1349
+[t_ms=     3943] RX                 SET 1351 YELLOW BLINK
+[t_ms=     3947] TX                 ACK 1351
+[t_ms=     4047] RX                 SET 1352 WHITE ON
+[t_ms=     4053] TX                 ACK 1352
+[t_ms=     5756] RX                 SET 1369 YELLOW BLINK
+[t_ms=     5759] TX                 ACK 1369
+[t_ms=     6854] RX                 SET 0 ALL BLINK
+[t_ms=     6858] TX                 ACK 0
+[t_ms=     8825] RX                 SET 24 YELLOW BLINK
+[t_ms=     8829] TX                 ACK 24
+[t_ms=    29010] SERVER_LOST        wifi=up
+[t_ms=    29264] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    31263] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    33263] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    35263] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    37263] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    39036] SERVER_CONNECTED   server=192.168.1.32:5050 local_ip=192.168.1.56
+[t_ms=    39039] TX                 REGISTER ACTUATOR
+[t_ms=    39063] RX                 OK
+[t_ms=    39063] RX                 SET 0 ALL BLINK
+[t_ms=    39066] TX                 ACK 0
+[t_ms=    39085] RX                 SET 317 YELLOW BLINK
+[t_ms=    39088] TX                 ACK 317
+[t_ms=    47670] SERVER_LOST        wifi=up
+[t_ms=    47927] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    49924] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    51924] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    53924] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    55797] SERVER_CONNECTED   server=192.168.1.32:5050 local_ip=192.168.1.56
+[t_ms=    55800] TX                 REGISTER ACTUATOR
+[t_ms=    55846] RX                 OK
+[t_ms=    55847] RX                 SET 0 YELLOW BLINK
+[t_ms=    55849] TX                 ACK 0
+[t_ms=    62899] SERVER_LOST        wifi=up
+[t_ms=    63154] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    65153] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    67153] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    69153] SERVER_UNREACHABLE server=192.168.1.32:5050

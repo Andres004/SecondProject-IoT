@@ -1,0 +1,64 @@
+
+== server_20261013_152623.csv (35.0 s, 347 events)
+Readings: 307 received over 0.6 min, 15 invalid, 0 lost, 1 seq restarts
+RF1 format: 0 readings without one decimal or NAN -> PASS
+RNF4 readings per 10 s window: min 72, mean 91.0, max 101 -> PASS
+RNF1 time between readings: mean 109.1 ms, p95 126.5 ms, max 2978.4 ms; 2 disconnections -> FAIL
+RF2/RF5/RF6 control: 0 zones different from the algorithm, 13 zone changes, 0 without command, 0 extra commands -> PASS
+     seq 1266 50.6: ERROR -> FAR
+     seq 1272 10.5: FAR -> NEAR
+     seq 1273 49.5: NEAR -> FAR
+     seq 1274 10.2: FAR -> NEAR
+     seq 1311 NAN: NEAR -> ERROR (202 ms after the first invalid reading)
+     seq 1313 5.9: ERROR -> NEAR
+     seq 1317 NAN: NEAR -> ERROR (204 ms after the first invalid reading)
+     seq 1318 5.9: ERROR -> NEAR
+     seq 1349 49.2: NEAR -> FAR
+     seq 1351 37.5: FAR -> MEDIUM
+     seq 1352 58.9: MEDIUM -> FAR
+     seq 1369 33.3: FAR -> MEDIUM
+     seq 24 21.9: ERROR -> MEDIUM
+RNF3 latency_ms of 9 zone changes: min 21.4, median 35.3, p95 207.0, max 207.0; worst response 100 + 207.0 = 307.0 ms -> NOT ENOUGH DATA
+     each change: 72.9, 46.1, 35.3, 207.0, 24.2, 40.3, 24.9, 21.4, 21.7
+RF7 (a) sensor lost (SENSOR/timeout) 1006 ms after the last reading; ACK 0 after 1042 ms -> PASS
+RNF5 after a server restart: REGISTER SENSOR 1479 ms after START -> PASS
+RNF5 after a server restart: REGISTER ACTUATOR 502 ms after START -> PASS
+RF4 protocol: 0 PROTOCOL_ERROR, 4 SET without ACK, 0 ACK without SET -> FAIL
+
+== server_20261013_152707.csv (10.3 s, 96 events)
+Readings: 86 received over 0.1 min, 0 invalid, 0 lost, 0 seq restarts
+RF1 format: 0 readings without one decimal or NAN -> PASS
+RNF1 time between readings: mean 99.9 ms, p95 121.6 ms, max 158.2 ms; 0 disconnections -> NOT ENOUGH DATA
+RF2/RF5/RF6 control: 0 zones different from the algorithm, 1 zone changes, 0 without command, 0 extra commands -> PASS
+     seq 317 21.9: ERROR -> MEDIUM
+RNF3 latency_ms of 1 zone changes: min 58.9, median 58.9, p95 58.9, max 58.9; worst response 100 + 58.9 = 158.9 ms -> NOT ENOUGH DATA
+     each change: 58.9
+RNF5 after a server restart: REGISTER SENSOR 1647 ms after START -> PASS
+RNF5 after a server restart: REGISTER ACTUATOR 1654 ms after START -> PASS
+RF4 protocol: 0 PROTOCOL_ERROR, 0 SET without ACK, 0 ACK without SET -> PASS
+
+== server_20261013_152724.csv (8.0 s, 80 events)
+Readings: 71 received over 0.1 min, 0 invalid, 0 lost, 0 seq restarts
+RF1 format: 0 readings without one decimal or NAN -> PASS
+RNF1 time between readings: mean 99.8 ms, p95 113.3 ms, max 140.7 ms; 0 disconnections -> NOT ENOUGH DATA
+RF2/RF5/RF6 control: 0 zones different from the algorithm, 1 zone changes, 0 without command, 0 extra commands -> PASS
+     seq 476 21.3: ERROR -> MEDIUM
+RNF5 after a server restart: REGISTER SENSOR 897 ms after START -> PASS
+RNF5 after a server restart: REGISTER ACTUATOR 922 ms after START -> PASS
+RF4 protocol: 0 PROTOCOL_ERROR, 0 SET without ACK, 0 ACK without SET -> PASS
+
+== B06_OI1.log (656 events)
+Events: BOOT 1, SERVER_CONNECTED 3, SERVER_LOST 3, SERVER_UNREACHABLE 14, WIFI_RETRY 0, TX_FAILED 267, RX_TOO_LONG 0
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1777 to 2000 ms (13 intervals) -> PASS
+
+== B06_OI2.log (47 events)
+Events: BOOT 1, SERVER_CONNECTED 3, SERVER_LOST 3, SERVER_UNREACHABLE 13, WIFI_RETRY 0, TX_FAILED 0, RX_TOO_LONG 0
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1773 to 2000 ms (12 intervals) -> PASS
