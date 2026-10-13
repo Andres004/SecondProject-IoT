@@ -1,0 +1,29 @@
+test_1_registers_first (__main__.ActuatorCheck.test_1_registers_first)
+RF4: the first message of OI-2 is REGISTER ACTUATOR. ... ok
+test_2_applies_every_command (__main__.ActuatorCheck.test_2_applies_every_command)
+RF3, RF4: every LED in every mode is applied and confirmed. ... ok
+test_3_ignores_invalid_lines (__main__.ActuatorCheck.test_3_ignores_invalid_lines)
+A line that is not a valid SET gets no ACK and changes nothing. ... ok
+test_4_shows_error_and_reconnects (__main__.ActuatorCheck.test_4_shows_error_and_reconnects)
+RF7 (b), RF7 (c): without server OI-2 shows ERROR, then returns. ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 27.393s
+
+OK
+
+Waiting for the ACTUATOR board on port 5050...
+
+  SET 1 RED ON: ACK after 31 ms
+  SET 2 RED BLINK: ACK after 188 ms
+  SET 3 YELLOW ON: ACK after 203 ms
+  SET 4 YELLOW BLINK: ACK after 109 ms
+  SET 5 WHITE ON: ACK after 79 ms
+  SET 6 WHITE BLINK: ACK after 47 ms
+  SET 7 ALL ON: ACK after 47 ms
+  SET 8 ALL BLINK: ACK after 62 ms
+  SET 000000000000000000015 RED ON: ACK after 125 ms 
+  SET 13 WHITE ON: ACK after 16 ms
+  SET 14 RED BLINK: ACK after 47 ms 
+  server closed for 6 s; REGISTER ACTUATOR 47 ms after listening again 
+  SET 0 WHITE ON: ACK after 31 ms 
