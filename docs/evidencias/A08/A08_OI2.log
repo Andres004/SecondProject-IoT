@@ -1,0 +1,65 @@
+[t_ms=       30] BOOT               ACTUATOR red=25 yellow=26 white=27
+[t_ms=      140] WIFI_CONNECTING    ssid=FLIA-OROZCO-2.4G
+[t_ms=     3719] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=     5717] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=     7719] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=     9717] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    11717] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=    13479] SERVER_CONNECTED   server=192.168.1.32:5050 local_ip=192.168.1.3
+[t_ms=    13482] TX                 REGISTER ACTUATOR
+[t_ms=    13534] RX                 OK
+[t_ms=    13543] RX                 SET 0 RED BLINK
+[t_ms=    13546] TX                 ACK 0
+[t_ms=    14060] RX                 SET 103 YELLOW BLINK
+[t_ms=    14063] TX                 ACK 103
+[t_ms=    17943] RX                 SET 0 ALL BLINK
+[t_ms=    17947] TX                 ACK 0
+[t_ms=    18536] RX                 SET 138 YELLOW BLINK
+[t_ms=    18539] TX                 ACK 138
+[t_ms=    28861] RX                 SET 0 ALL BLINK
+[t_ms=    28864] TX                 ACK 0
+[t_ms=    46184] SERVER_LOST        wifi=down
+[t_ms=    56181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=    66181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=    76181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=    86181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=    96181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   106181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   116183] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   126181] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   132278] SERVER_CONNECTED   server=192.168.1.32:5050 local_ip=192.168.1.4
+[t_ms=   132281] TX                 REGISTER ACTUATOR
+[t_ms=   132355] RX                 OK
+[t_ms=   132356] RX                 SET 0 ALL BLINK
+[t_ms=   132358] TX                 ACK 0
+[t_ms=   146959] RX                 SET 1282 YELLOW BLINK
+[t_ms=   146962] TX                 ACK 1282
+[t_ms=   147891] RX                 SET 0 ALL BLINK
+[t_ms=   147894] TX                 ACK 0
+[t_ms=   152836] RX                 SET 1334 YELLOW BLINK
+[t_ms=   152840] TX                 ACK 1334
+[t_ms=   158826] RX                 SET 0 ALL BLINK
+[t_ms=   158829] TX                 ACK 0
+[t_ms=   159267] RX                 SET 1384 YELLOW BLINK
+[t_ms=   159270] TX                 ACK 1384
+[t_ms=   212391] SERVER_LOST        wifi=down
+[t_ms=   222389] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   232389] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   242389] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   252389] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   262390] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   267319] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   269317] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   271316] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   281717] WIFI_RETRY         ssid=FLIA-OROZCO-2.4G
+[t_ms=   287478] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   289477] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   291477] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   293264] SERVER_CONNECTED   server=192.168.1.32:5050 local_ip=192.168.1.2
+[t_ms=   293266] TX                 REGISTER ACTUATOR
+[t_ms=   302578] RX                 OK
+[t_ms=   302578] RX                 SET 0 YELLOW BLINK
+[t_ms=   302581] TX                 ACK 0
+[t_ms=   320351] SERVER_LOST        wifi=up
+[t_ms=   320606] SERVER_UNREACHABLE server=192.168.1.32:5050
+[t_ms=   322605] SERVER_UNREACHABLE server=192.168.1.32:5050

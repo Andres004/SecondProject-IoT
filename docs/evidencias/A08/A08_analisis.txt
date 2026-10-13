@@ -1,0 +1,46 @@
+
+== server_20261013_161536.csv (308.7 s, 528 events)
+Readings: 472 received over 5.1 min, 0 invalid, 1939 lost, 0 seq restarts
+RF1 format: 0 readings without one decimal or NAN -> PASS
+RNF4 readings per 10 s window: min 0, mean 12.9, max 100 -> FAIL
+RNF1 time between readings: mean 655.2 ms, p95 206.4 ms, max 131686.5 ms; 8 disconnections -> FAIL
+RF2/RF5/RF6 control: 0 zones different from the algorithm, 7 zone changes, 0 without command, 0 extra commands -> PASS
+     seq 79 19.1: ERROR -> NEAR
+     seq 103 22.3: NEAR -> MEDIUM
+     seq 138 27.4: ERROR -> MEDIUM
+     seq 1282 27.4: ERROR -> MEDIUM
+     seq 1334 27.5: ERROR -> MEDIUM
+     seq 1384 27.5: ERROR -> MEDIUM
+     seq 2218 26.6: ERROR -> MEDIUM
+RNF3 latency_ms of 5 zone changes: min 59.3, median 130.7, p95 1768.5, max 1768.5; worst response 100 + 1768.5 = 1868.5 ms -> FAIL
+     each change: 1735.8, 87.6, 130.7, 59.3, 1768.5
+RF7 (a) sensor lost (SENSOR/timeout) 1015 ms after the last reading; ACK 0 after 1068 ms -> PASS
+RF7 (a) sensor lost (SENSOR/timeout) 1014 ms after the last reading; ACK 0 after 1046 ms -> PASS
+RF7 (a) sensor lost (SENSOR/timeout) 1011 ms after the last reading; ACK 0 after 1150 ms -> PASS
+RF7 (a) sensor lost (SENSOR/timeout) 1004 ms after the last reading; no ACK 0 (zone already ERROR or no actuator)
+RF7 (a) sensor lost (SENSOR/error) 112 ms after the last reading; no ACK 0 (zone already ERROR or no actuator)
+RNF5 after a server restart: REGISTER SENSOR 98 ms after START -> PASS
+RNF5 after a server restart: REGISTER ACTUATOR 1927 ms after START -> PASS
+RF4 protocol: 0 PROTOCOL_ERROR, 0 SET without ACK, 0 ACK without SET -> PASS
+
+== A08_OI1.log (2586 events)
+Events: BOOT 1, SERVER_CONNECTED 7, SERVER_LOST 7, SERVER_UNREACHABLE 15, WIFI_RETRY 16, TX_FAILED 2007, RX_TOO_LONG 0
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=down
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=up
+     SERVER_LOST wifi=down
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1773 to 15944 ms (14 intervals) -> FAIL
+RF7 (c) WiFi requests every 9998 to 10002 ms (13 intervals) -> PASS
+
+== A08_OI2.log (65 events)
+Events: BOOT 1, SERVER_CONNECTED 3, SERVER_LOST 3, SERVER_UNREACHABLE 13, WIFI_RETRY 14, TX_FAILED 0, RX_TOO_LONG 0
+     SERVER_LOST wifi=down
+     SERVER_LOST wifi=down
+     SERVER_LOST wifi=up
+RNF1 restarts: 0 -> PASS
+RF7 (c) connection attempts every 1762 to 16162 ms (12 intervals) -> FAIL
+RF7 (c) WiFi requests every 9998 to 10002 ms (11 intervals) -> PASS
